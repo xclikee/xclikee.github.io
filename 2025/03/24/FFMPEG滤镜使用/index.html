@@ -1,0 +1,683 @@
+
+<!DOCTYPE html><html lang="zh-CH">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1" theme-name="Stellar" theme-version="1.29.1">
+  
+  <meta name="generator" content="Hexo 7.3.0">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  
+  <title>FFMPEG滤镜使用 - 无聊的橙子</title>
+
+  
+    <meta name="description" content="说明滤镜（filter）详细介绍参考官方文档，主要使用了libavfilter库进行音视频处理。 常用的滤镜功能，像图像加水印&#x2F;字幕、去logo、图形旋转缩放等，但滤镜不仅仅包括视频部分，还包括音频处理的，像变声变调、声场控制（重低音&#x2F;留声机&#x2F;摇滚等效果）。 下面介绍滤镜类中常用命令 key1.去除水印该需求实现分为两步：step1.确认水印位置和效果；step2.位">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FFMPEG滤镜使用">
+<meta property="og:url" content="http://xclikee.github.io/2025/03/24/FFMPEG%E6%BB%A4%E9%95%9C%E4%BD%BF%E7%94%A8/index.html">
+<meta property="og:site_name" content="无聊的橙子">
+<meta property="og:description" content="说明滤镜（filter）详细介绍参考官方文档，主要使用了libavfilter库进行音视频处理。 常用的滤镜功能，像图像加水印&#x2F;字幕、去logo、图形旋转缩放等，但滤镜不仅仅包括视频部分，还包括音频处理的，像变声变调、声场控制（重低音&#x2F;留声机&#x2F;摇滚等效果）。 下面介绍滤镜类中常用命令 key1.去除水印该需求实现分为两步：step1.确认水印位置和效果；step2.位">
+<meta property="og:locale" content="zh_CH">
+<meta property="og:image" content="http://xclikee.github.io/images/lidxxerl.png">
+<meta property="og:image" content="http://xclikee.github.io/images/lidxybej.png">
+<meta property="og:image" content="http://xclikee.github.io/images/lidy02wp.png">
+<meta property="article:published_time" content="2025-03-24T15:01:36.000Z">
+<meta property="article:modified_time" content="2025-03-24T15:37:06.487Z">
+<meta property="article:author" content="XCLIKEE">
+<meta property="article:tag" content="博客,xclikee,代码，记录">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://xclikee.github.io/images/lidxxerl.png">
+  
+  
+  
+  <meta name="keywords" content="博客,xclikee,代码，记录">
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.29.1">
+
+  
+
+  
+
+  
+</head>
+<body>
+
+<div class="l_body s:aa content tech" id="start" layout="post" ><aside class="l_left"><div class="leftbar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="avatar" href="/about/"><div class="bg" style="opacity:0;background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp);"></div><img no-lazy class="avatar" src="/css/images/head.jpg" onerror="javascript:this.classList.add('error');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/2659360.svg';"></a><a class="title" href="/"><div class="main" ff="title">无聊的橙子</div><div class="sub normal cap">程序员</div><div class="sub hover cap" style="opacity:0"> 日常记录</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="Search"></form><div id="search-result"></div><div class="search-no-result">No Results!</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">Recent Update</span></div><div class="widget-body fs14"><a class="item title" href="/2025/03/24/Unity%E5%AE%9E%E7%8E%B0UI%E7%9A%84%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E6%8B%96%E6%8B%BD%E6%8B%89%E4%BC%B8%E5%8A%9F%E8%83%BD/"><span class="title">Unity实现UI的边缘检测和拖拽拉伸功能</span></a><a class="item title" href="/2025/03/24/%E6%8C%89%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%B8%AD%E7%9A%84%E6%95%B0%E5%AD%97%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98/"><span class="title">c#按字符串中的数字排序问题</span></a><a class="item title" href="/2025/03/24/%E4%BF%AE%E5%A4%8DPlatformlO%E6%89%BE%E4%B8%8D%E5%88%B0%E8%BF%99%E6%A0%B7%E7%9A%84%E6%96%87%E4%BB%B6%E6%88%96%E8%80%85%E7%9B%AE%E5%BD%95/"><span class="title">修复 PlatformlO 找不到这样的文件或者目录</span></a><a class="item title" href="/2025/03/24/platformio-ide-build-%E9%94%99%E8%AF%AF/"><span class="title">platformio-ide.build 错误</span></a><a class="item title" href="/2025/03/24/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E9%9A%8F%E6%9C%BA%E8%8E%B7%E5%8F%96%E4%B8%80%E6%9D%A1%E6%88%96%E5%A4%9A%E6%9D%A1%E8%AE%B0%E5%BD%95/"><span class="title">MySQL数据库中随机获取一条或多条记录</span></a><a class="item title" href="/2025/03/24/%E5%A4%9A%E8%A1%A8%E8%81%94%E6%9F%A5%E6%9F%A5%E8%AF%A2%E7%BB%93%E6%9E%9C%E5%87%BA%E7%8E%B0%E9%87%8D%E5%A4%8D%E7%9A%84%E5%8E%9F%E5%9B%A0%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/"><span class="title">Mysql多表联查，查询结果出现重复的原因和解决方法</span></a><a class="item title" href="/2025/03/24/%E6%A3%80%E6%B5%8B%E9%BC%A0%E6%A0%87%E6%89%80%E7%82%B9%E5%87%BB%E7%9A%84%E6%8C%89%E9%92%AE%E4%BD%8D%E7%BD%AE%E6%98%AF%E5%90%A6%E6%98%AF%E9%80%8F%E6%98%8E%E7%9A%84/"><span class="title">检测鼠标所点击的按钮位置是否是透明的</span></a><a class="item title" href="/2025/03/24/WWW-%E4%B8%8B%E8%BD%BD%E7%9A%84%E7%85%A7%E7%89%87%E6%96%B9%E5%90%91%E4%B8%8D%E6%AD%A3%E7%A1%AE/"><span class="title">WWW 下载的照片方向不正确</span></a><a class="item title" href="/2025/03/24/Unity%E8%87%AA%E5%8A%A8%E6%B7%BB%E5%8A%A0%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4/"><span class="title">Unity自动添加命名空间</span></a><a class="item title" href="/2025/03/24/Unity-%E6%8E%A7%E5%88%B6HDR-Color-Intensity/"><span class="title">Unity 控制HDR Color Intensity</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">Home</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">Blog</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/ffmpeg/">ffmpeg</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">Posted on: <time datetime="2025-03-24T15:01:36.000Z">2025-03-24</time></span><span class="sep updated"></span><span class="text updated">Updated on: <time datetime="2025-03-24T15:37:06.487Z">2025-03-24</time></span></div></div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>FFMPEG滤镜使用</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><h4 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h4><p>滤镜（filter）详细介绍参考<a target="_blank" rel="noopener" href="http://ffmpeg.org/ffmpeg-filters.html">官方文档</a>，主要使用了libavfilter库进行音视频处理。</p>
+<p>常用的滤镜功能，像图像加水印&#x2F;字幕、去logo、图形旋转缩放等，但滤镜不仅仅包括视频部分，还包括音频处理的，像变声变调、声场控制（重低音&#x2F;留声机&#x2F;摇滚等效果）。</p>
+<p>下面介绍滤镜类中常用命令</p>
+<h4 id="key1-去除水印"><a href="#key1-去除水印" class="headerlink" title="key1.去除水印"></a>key1.去除水印</h4><p>该需求实现分为两步：step1.确认水印位置和效果；step2.位置和效果反复调整合适了，再转码</p>
+<p>step1</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay -i Tuesday00.mp4 -vf delogo=x=30:y=40:w=350:h=60:show=1,scale=640x480</span><br></pre></td></tr></table></figure>
+<p>其中，参数<code>-vf</code>指视频的滤镜处理（video filter），后面跟参数（水印区域：x&#x2F;y&#x2F;w&#x2F;h，是否圈住区域：show，缩放处理：scale），注意各子处理模块间（<code>delogo``与scale</code>）用”逗号”分隔，子处理模块内的各参数用“冒号”分割。</p>
+<p>如果不想缩放处理，但是视频w&#x2F;h太大了，以至于超出了显示器显示区域的范围，可以控制播放窗口的大小。使用-x或-y指定播放窗口的宽或高。</p>
+<p>step2</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i Tuesday00.mp4 -vf delogo=x=30:y=40:w=350:h=60:show=0,scale=640x480 -c:v libx264 -c:a copy output.mp4</span><br></pre></td></tr></table></figure>
+
+<p>尝试了多次，确定好区域后，可以进行转码了。注意一点，show要关掉（<code>show=0</code>，否则delogo区域出现绿框），video转码参数（<code>-c:v libx264</code>）可以不带，系统默认使用x264编码。</p>
+<h4 id="key2-去除某个时间段的水印"><a href="#key2-去除某个时间段的水印" class="headerlink" title="key2.去除某个时间段的水印"></a>key2.去除某个时间段的水印</h4><p>在上面Key2.step2命令中增加时间控制信息： <code>-ss 5 -t 10</code>（从第5秒开始，持续10s，共10秒钟长的视频）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i Tuesday00.mp4 -ss 5 -t 10 -vf delogo=x=30:y=40:w=350:h=60:show=0,scale=640x480 -c:v libx264 -c:a copy output.mp4</span><br></pre></td></tr></table></figure>
+
+<p>注意：<code>-ss 5 -t 10</code>参数，对于ffmpeg来说，放在input_file前和后貌似没什么差别，都是转成10秒钟长度的视频文件。</p>
+<p>另外一点增强型需求：假如有多个时间段需要去除水印，例如，第0-15秒之间某个区域需要去除，还有20-30秒之间的另外一个区域水印去除。</p>
+<p>这个需求的方法还没找到，有知道的同学们麻烦告知一下。目前我使用了比较笨的方法，就是多次转码。</p>
+<h4 id="key3-同时去除多个区域的水印"><a href="#key3-同时去除多个区域的水印" class="headerlink" title="key3.同时去除多个区域的水印"></a>key3.同时去除多个区域的水印</h4><p>在Key1中的step1命令中再增加一个delogo参数，即命令为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay -i Tuesday00.mp4 -vf delogo=x=30:y=40:w=350:h=60:show=1,delogo=x=230:y=240:w=350:h=60:show=1 -y 300</span><br></pre></td></tr></table></figure>
+
+<p>确定好位置后，再用ffmpeg转码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i Tuesday00.mp4 -vf delogo=x=30:y=40:w=350:h=60:show=1,delogo=x=230:y=240:w=350:h=60:show=1 output.mp4</span><br></pre></td></tr></table></figure>
+
+<h4 id="key4-添加文字水印"><a href="#key4-添加文字水印" class="headerlink" title="key4.添加文字水印"></a>key4.添加文字水印</h4><p>与Key1类型，先用ffplay确认位置和效果，再用ffmpeg进行滤镜+转码。</p>
+<p><strong>step1</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay -i Tuesday00.mp4 -vf &quot;drawtext=fontfile=msyh.ttc:text=&#x27;Hello,world&#x27;:x=30:y=60:fontsize=120:fontcolor=yellow&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意，本地的字体文件（fontfile&#x3D;msyh.ttc）可以不指定，找不到了用系统使用默认的。</p>
+<p><strong>step2</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i Tuesday00.mp4 -vf &quot;drawtext=fontfile=msyh.ttc:text=&#x27;Hello,world&#x27;:x=30:y=60:fontsize=120:fontcolor=yellow&quot; output.mp4</span><br></pre></td></tr></table></figure>
+
+<h4 id="key5-给视频添加封面"><a href="#key5-给视频添加封面" class="headerlink" title="key5.给视频添加封面"></a>key5.给视频添加封面</h4><p>其实是将指定图片作为视频的前几帧（只指定为第一帧时，有的平台可能不使用首帧作为缩略图则达不到效果）。核心思想是，图片转为包含若干帧图像的视频流，再跟主视频合并。</p>
+<p><strong>step1</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg.exe -r 25 -loop 1 -i img.jpg -vcodec libx264 -s 720x1280 -frames 25 -r 25 img_25f.mp4</span><br></pre></td></tr></table></figure>
+<p>其中，参数<code>-r 25 -loop 1</code>代表以25fps速度反复读取输入文件。参数<code>-frames 25</code>指只编码25帧，<code>-r 25</code>指定输出文件帧率为25fps。那么命令结果是，生成了1秒钟的视频文件（用工具分析文件，会发现：第一帧的关键帧size较大，后面的B&#x2F;P帧非常小，只有几十Bytes大小，因为h264编码p或b帧时，使用的帧间编码技术，参考了第一帧I帧内容编码而来）。</p>
+<p><strong>step2</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -f concat -i concat.txt -c copy output.mp4</span><br></pre></td></tr></table></figure>
+<p>其中，参数<code>-f concat</code>指视频合并；参数<code>-i concat.txt</code>指定输入文件列表，如下格式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">file input1.mp4</span><br><span class="line">file input2.mp4</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：如果合并时出现如下异常：[concat @ 0x2690e00] DTS 4079 &lt; 8156 out of order0:02:43.12 bitrate&#x3D; 676.2kbits&#x2F;s</p>
+</blockquote>
+<p>可以这样做：把两个mp4视频分别抽取出裸流，保存为两个独立的h264文件，再合并，这样就不会出现合并时的dts异常问题了（因为裸码流根本没有pts&#x2F;dts）<br>抽取出裸码流命令为：命令为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i input.mp4 -c:v copy -an output.mp4</span><br></pre></td></tr></table></figure>
+
+<h4 id="key6-将视频放在黑板上"><a href="#key6-将视频放在黑板上" class="headerlink" title="key6.将视频放在黑板上"></a>key6.将视频放在黑板上</h4><p>另外一种说法是，将视频放在幕布上。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i input.mp4 -vf pad=720:1280:100:200:black output.mp4</span><br></pre></td></tr></table></figure>
+
+<p>其中，参数<code>pad=720:1280:100:200</code>指定了幕布的宽&#x2F;高以及视频（左上角）放置在该幕布中的位置（如果放在幕布左上角，参数为<code>pad=720:1280:0:0</code>），参数<code>black</code>指定了幕布的颜色。</p>
+<p>另外一点需注意，输入视频size不能超过了幕布size，否则出错（Padded dimensions cannot be smaller than input dimensions.），但允许视频（经过变换后）右下角坐标超过幕布右下角坐标。</p>
+<h4 id="key7-视频等比例缩放后置于幕布上"><a href="#key7-视频等比例缩放后置于幕布上" class="headerlink" title="key7.视频等比例缩放后置于幕布上"></a>key7.视频等比例缩放后置于幕布上</h4><p>目标与上面的类似，但有一些差异：Key6中的视频宽度和高度可能都小于幕布size，导致使用滤镜后得到的视频，四个周边都有黑框，而本条目标是将视频宽度缩放到幕布的宽度，再贴到幕布上，留下只有上面和下面是黑色的电影效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">fmpeg -i input.mp4 -vf &quot;scale=720:(ih*720/iw),pad=720:1280:0:(1280-(ih*720/iw))/2:black&quot; -y output.mp4  // 将视频等比例缩放到720的宽度，再贴到幕布（720x1280）中央。</span><br><span class="line"></span><br><span class="line">ffmpeg -i input.mp4 -vf &quot;scale=720:(ih*ow/iw),pad=720:1280:0:(oh-(ih*ow/iw))/2:black&quot; -y output.mp4       //上条命令的简写，其中iw、ih指输入（input.mp4文件）的宽高，ow、oh指（pad——幕布）输出的宽高。</span><br></pre></td></tr></table></figure>
+
+<p>注意一点，如果在视频在幕布上超出了幕布的宽或高，则视频在宽（x轴、水平方向）或高（y轴、垂直方向）方向上会自动居中对齐，因此参数<code>(oh-(ih*ow/iw))/2</code>用来手动指定垂直方向上居中对齐略有些复杂，可以也不用写这么复杂，例如直接写成”oh”或”-1”，就会自动上下居中了。</p>
+<h4 id="key8-滚动的字幕"><a href="#key8-滚动的字幕" class="headerlink" title="key8.滚动的字幕"></a>key8.滚动的字幕</h4><p>类似于点视台放的电视剧下面的流动广告或通知。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i input.mp4 -vf &quot;drawtext=text=&#x27;李公公给老佛爷讲段子&#x27;: y=10:x=(mod(5*n\,w+tw)-tw):fontsize=60:fontcolor=yellow:shadowy=10&quot; -y output.mp4</span><br></pre></td></tr></table></figure>
+<p>其中，drawtext的参数<code>y=10:x=(mod(5*n\,w+tw)-tw)</code>为字幕（的首字）的位置：始终固定在同一个高度上，但水平方向上是移动的，n指第几帧图像，5*n指移动速度（5pix&#x2F;f），符号“\”用于指示后面的特殊符号“，”，w&#x2F;h指输入视频的宽高，tw指总字宽（fontsize控制，即字数x字体宽fontsize），mod指数学上的求余。因此，经计算后该position范围为[-tw, w]，效果为：一排字从视频左端开始显现，到视频右边消失，之后再从左边显现，呈现出循环显示的特点。</p>
+<p>参数<code>shadowy=10</code>指阴影在垂直方向上的偏移距离。</p>
+<p>注意一点，中文字体的fontsize跟视频size是匹配的，但是英文字体不是匹配的。简单说来，如果视频宽为600，字体fontsize&#x3D;60，那么中文字符串如果有10个字，则恰好铺满视频宽度，如果是英文字符串，则需要更多字才能铺满视频宽度。</p>
+<h4 id="key9-视频裁剪-crop-处理"><a href="#key9-视频裁剪-crop-处理" class="headerlink" title="key9.视频裁剪(crop)处理"></a>key9.视频裁剪(crop)处理</h4><p>该需求类似于，一张纸片或布，只需要中间的一部分（矩形区域），其他区域都裁掉不要。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fmpeg -i input.mp4 -vf crop=1280:720:0:0 output.mp4</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>crop</code>的参数格式为<code>w:h:x:y，w、h</code>为输出视频的宽和高，x、y标记输入视频中的某点，将该点作为基准点，向右下进行裁剪得到输出视频。如果x y不写的话，默认居中剪切。</p>
+<h4 id="key10-添加居中字幕，字体缩小后再放大"><a href="#key10-添加居中字幕，字体缩小后再放大" class="headerlink" title="key10.添加居中字幕，字体缩小后再放大"></a>key10.添加居中字幕，字体缩小后再放大</h4><p>先用ffplay验证效果，再使用ffmpeg转码（转码命令略，后续只给出ffplay的命令）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay -i input.mp4 -vf drawtext=text=&#x27;hello\,world&#x27;:x=\(w-text_w\)/2:y=\(h-text_h\)/2:fontsize=abs\(\(300\-2\*n\)\):fontcolor=yellow:fix_bounds=1</span><br></pre></td></tr></table></figure>
+
+<h4 id="key11-四窗口画面，只使用两个窗口显示视频"><a href="#key11-四窗口画面，只使用两个窗口显示视频" class="headerlink" title="key11. 四窗口画面，只使用两个窗口显示视频"></a>key11. 四窗口画面，只使用两个窗口显示视频</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay -i Tuesday02.mp4 -vf &quot;split [main][tmp]; [main] scale=iw/2:ih/2 [a]; [tmp] scale=iw/2:ih/2, pad=iw*2:ih*2:iw:0:black [b]; [b][a] overlay=0:H/2&quot;</span><br></pre></td></tr></table></figure>
+
+<p>注意：参数<code>overlay=0:H/2</code>，由于两个输入视频，不能使用iw或ih，因为不知道使用哪个的，而用大写的<code>W/H</code>表示第一个（主）的宽&#x2F;高，小写的<code>w/h</code>表示第二个（次）的宽&#x2F;高。</p>
+<p>显示效果如下：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/lidxxerl.png"></p>
+<h4 id="key12-16：9的视频方便手机竖屏播放，上下部分虚化"><a href="#key12-16：9的视频方便手机竖屏播放，上下部分虚化" class="headerlink" title="key12.16：9的视频方便手机竖屏播放，上下部分虚化"></a>key12.16：9的视频方便手机竖屏播放，上下部分虚化</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay.exe -i dajiangdongqu_symphony.mp4 -vf &quot;split[fg0][bg0];[bg0]scale=720:1280,boxblur=10:10[bg1];[fg0]scale=720:(720*ih/iw)[fg1];[bg1][fg1]overlay=0:(H-h)/2,setdar=9/16&quot;</span><br></pre></td></tr></table></figure>
+
+<p>手机竖屏播放时，普通720p(1280x720)只会在屏幕中间显示，上下部分黑屏。如果想让上下的黑屏用虚化的效果调换掉，即变化后的视频分辨率近似为手机LCD分辨率，又能恰好铺满桌面而又不产生非等比例拉伸效果，即抖音上常见的竖屏视频效果。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/lidxybej.png"></p>
+<p>需要说明几点：</p>
+<ol>
+<li><p>bg1为最终的背景，即虚化后的图像，其先进行缩放到720*1280的scale操作，再进行虚化blur。</p>
+</li>
+<li><p>fg1为最终的前景，其由原始视频等比例缩放而来，例如：1920x1080的图形，缩放得到720<em>x的图形，如果不希望图像被被拉伸（即等比例缩放），那么可得出x&#x3D;720</em>1080&#x2F;1920，即720*ih&#x2F;iw操作。</p>
+</li>
+<li><p>目前手机LCD的分辨率，一般为9：16(例如720x1280，方便电影大片横屏播放)，后来手机的刘海慢慢消失，宽高比例慢慢变成了9：18乃至9：20，但主流的高&#x2F;宽比例仍是2左右，因此生成的视频的分辨率，最好接近这个比例。从抖音上下载的片子，目前看到的都是720x1280的尺寸。</p>
+</li>
+<li><p>setdar&#x3D;9&#x2F;16的目的，需要经过播放验证才能明白其中道理。虽然生成的片子是720x1280，但播放器播放时还可能参考显示比例（DisplayAspectRatio）这个参数（从技术角度上讲，该值在sps-vui中定义），一些播放器会根据这个参数来强制对图形进行拉伸处理。例如，解码后得到的图像为720x1280，如果DAR&#x3D;16：9，则会再把本来竖着的图像压扁后再进行播放，这样的播放体验就不太好了。</p>
+</li>
+</ol>
+<h4 id="key13-为视频添加图片水印"><a href="#key13-为视频添加图片水印" class="headerlink" title="key13.为视频添加图片水印"></a>key13.为视频添加图片水印</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay.exe -i djdq.mp4 -vf &quot;movie=haha.jpg[wm];[in][wm] overlay=0:0&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/lidy02wp.png"></p>
+<p>几点说明：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">movie=haha.jpg[wm]   //指定图片水印路径，wm——WaterMark</span><br><span class="line"></span><br><span class="line">[in][wm]             //输入的片源（即djdq.mp4），以及水印（由前面指定的，即movie=haha.jpg）</span><br><span class="line"></span><br><span class="line">overlay=0:0          //图片水印（左上角）放在视频中的位置，0:0指左上角，W/2:H/2指视频中间位置上开始叠加图片</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>另外一种方式，在右下角加水印：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffplay -i input.mp4 -i logo.png -filter_complex &#x27;overlay=main_w-overlay_w-10:main_h-overlay_h-10&#x27;</span><br></pre></td></tr></table></figure>
+
+
+<h4 id="原文-FFMPEG滤镜使用"><a href="#原文-FFMPEG滤镜使用" class="headerlink" title="原文 FFMPEG滤镜使用"></a><a target="_blank" rel="noopener" href="https://www.cnblogs.com/Dreaming-in-Gottingen/p/13894450.html">原文 FFMPEG滤镜使用</a></h4>
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>License</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"><div class="note">Newer</div><a href="/2025/03/24/Texture2d-%E7%BC%A9%E7%95%A5%E5%9B%BE/">Texture2d 缩略图</a></div><div class="item" id="next"><div class="note">Older</div><a href="/2025/03/24/FFmpeg-%E8%A7%86%E9%A2%91%E5%A4%84%E7%90%86%E5%85%A5%E9%97%A8%E6%95%99%E7%A8%8B/">FFmpeg 视频处理入门教程</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">XCLIKEE</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1">Stellar 1.29.1</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class="main-mask" onclick="sidebar.dismiss()"></div></div><aside class="l_right">
+<div class="widgets">
+
+
+
+<widget class="widget-wrapper toc" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">On This Page</span><a class="cap-action" onclick="sidebar.toggleTOC()" ><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></a></div><div class="widget-body"><ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%AF%B4%E6%98%8E"><span class="toc-text">说明</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key1-%E5%8E%BB%E9%99%A4%E6%B0%B4%E5%8D%B0"><span class="toc-text">key1.去除水印</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key2-%E5%8E%BB%E9%99%A4%E6%9F%90%E4%B8%AA%E6%97%B6%E9%97%B4%E6%AE%B5%E7%9A%84%E6%B0%B4%E5%8D%B0"><span class="toc-text">key2.去除某个时间段的水印</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key3-%E5%90%8C%E6%97%B6%E5%8E%BB%E9%99%A4%E5%A4%9A%E4%B8%AA%E5%8C%BA%E5%9F%9F%E7%9A%84%E6%B0%B4%E5%8D%B0"><span class="toc-text">key3.同时去除多个区域的水印</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key4-%E6%B7%BB%E5%8A%A0%E6%96%87%E5%AD%97%E6%B0%B4%E5%8D%B0"><span class="toc-text">key4.添加文字水印</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key5-%E7%BB%99%E8%A7%86%E9%A2%91%E6%B7%BB%E5%8A%A0%E5%B0%81%E9%9D%A2"><span class="toc-text">key5.给视频添加封面</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key6-%E5%B0%86%E8%A7%86%E9%A2%91%E6%94%BE%E5%9C%A8%E9%BB%91%E6%9D%BF%E4%B8%8A"><span class="toc-text">key6.将视频放在黑板上</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key7-%E8%A7%86%E9%A2%91%E7%AD%89%E6%AF%94%E4%BE%8B%E7%BC%A9%E6%94%BE%E5%90%8E%E7%BD%AE%E4%BA%8E%E5%B9%95%E5%B8%83%E4%B8%8A"><span class="toc-text">key7.视频等比例缩放后置于幕布上</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key8-%E6%BB%9A%E5%8A%A8%E7%9A%84%E5%AD%97%E5%B9%95"><span class="toc-text">key8.滚动的字幕</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key9-%E8%A7%86%E9%A2%91%E8%A3%81%E5%89%AA-crop-%E5%A4%84%E7%90%86"><span class="toc-text">key9.视频裁剪(crop)处理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key10-%E6%B7%BB%E5%8A%A0%E5%B1%85%E4%B8%AD%E5%AD%97%E5%B9%95%EF%BC%8C%E5%AD%97%E4%BD%93%E7%BC%A9%E5%B0%8F%E5%90%8E%E5%86%8D%E6%94%BE%E5%A4%A7"><span class="toc-text">key10.添加居中字幕，字体缩小后再放大</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key11-%E5%9B%9B%E7%AA%97%E5%8F%A3%E7%94%BB%E9%9D%A2%EF%BC%8C%E5%8F%AA%E4%BD%BF%E7%94%A8%E4%B8%A4%E4%B8%AA%E7%AA%97%E5%8F%A3%E6%98%BE%E7%A4%BA%E8%A7%86%E9%A2%91"><span class="toc-text">key11. 四窗口画面，只使用两个窗口显示视频</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key12-16%EF%BC%9A9%E7%9A%84%E8%A7%86%E9%A2%91%E6%96%B9%E4%BE%BF%E6%89%8B%E6%9C%BA%E7%AB%96%E5%B1%8F%E6%92%AD%E6%94%BE%EF%BC%8C%E4%B8%8A%E4%B8%8B%E9%83%A8%E5%88%86%E8%99%9A%E5%8C%96"><span class="toc-text">key12.16：9的视频方便手机竖屏播放，上下部分虚化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#key13-%E4%B8%BA%E8%A7%86%E9%A2%91%E6%B7%BB%E5%8A%A0%E5%9B%BE%E7%89%87%E6%B0%B4%E5%8D%B0"><span class="toc-text">key13.为视频添加图片水印</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8E%9F%E6%96%87-FFMPEG%E6%BB%A4%E9%95%9C%E4%BD%BF%E7%94%A8"><span class="toc-text">原文 FFMPEG滤镜使用</span></a></li></ol></div><div class="widget-footer">
+
+<a class="top" onclick="util.scrollTop()"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.535 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 15.5l3-3l3 3m-6-4l3-3l3 3"/></g></svg><span>Scroll to Top</span></a></div></widget>
+</div></aside><div class='float-panel blur'>
+  <button type='button' style='display:none' class='laptop-only rightbar-toggle mobile' onclick='sidebar.rightbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button type='button' style='display:none' class='mobile-only leftbar-toggle mobile' onclick='sidebar.leftbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+</div><div class="scripts">
+<script type="text/javascript">
+  const ctx = {
+    date_suffix: {
+      just: `Just`,
+      min: `minutes ago`,
+      hour: `hours ago`,
+      day: `days ago`,
+    },
+    root : `/`,
+  };
+
+  // required plugins (only load if needs)
+  if (`local_search`) {
+    ctx.search = {};
+    ctx.search.service = `local_search`;
+    if (ctx.search.service == 'local_search') {
+      let service_obj = Object.assign({}, `{"field":"all","path":"/search.json","content":true,"sort":"-date"}`);
+      ctx.search[ctx.search.service] = service_obj;
+    }
+  }
+  const def = {
+    avatar: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg`,
+    cover: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/cover/76b86c0226ffd.svg`,
+  };
+  const deps = {
+    jquery: `https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js`,
+    marked: `https://cdn.jsdelivr.net/npm/marked@13.0.1/lib/marked.umd.min.js`
+  }
+  
+
+</script>
+
+<script type="text/javascript">
+  const utils = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    css: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    js: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = ctx.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    jq: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        utils.js(deps.jquery).then(fn)
+      } else {
+        fn()
+      }
+    },
+    
+    onLoading: (el) => {
+      if (el) {
+        $(el).append('<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+      }
+    },
+    onLoadSuccess: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap').remove();
+      }
+    },
+    onLoadFailure: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap svg').remove();
+        $(el).find('.loading-wrap').append('<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+        $(el).find('.loading-wrap').addClass('error');
+      }
+    },
+    request: (el, url, callback, onFailure) => {
+      let retryTimes = 3;
+      utils.onLoading(el);
+      function req() {
+        return new Promise((resolve, reject) => {
+          let status = 0; // 0 等待 1 完成 2 超时
+          let timer = setTimeout(() => {
+            if (status === 0) {
+              status = 2;
+              timer = null;
+              reject('请求超时');
+              if (retryTimes == 0) {
+                onFailure();
+              }
+            }
+          }, 5000);
+          fetch(url).then(function(response) {
+            if (status !== 2) {
+              clearTimeout(timer);
+              resolve(response);
+              timer = null;
+              status = 1;
+            }
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Network response was not ok.');
+          }).then(function(data) {
+            retryTimes = 0;
+            utils.onLoadSuccess(el);
+            callback(data);
+          }).catch(function(error) {
+            if (retryTimes > 0) {
+              retryTimes -= 1;
+              setTimeout(() => {
+                req();
+              }, 5000);
+            } else {
+              utils.onLoadFailure(el);
+              onFailure();
+            }
+          });
+        });
+      }
+      req();
+    },
+  };
+</script>
+
+<script>
+  const sidebar = {
+    leftbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    rightbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('rightbar');
+        l_body.removeAttribute('leftbar');
+      }
+    },
+    dismiss: () => {
+      if (l_body) {
+        l_body.removeAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    toggleTOC: () => {
+      document.querySelector('#data-toc').classList.toggle('collapse');
+    }
+  }
+</script>
+<script type="text/javascript">
+  (() => {
+    const tagSwitchers = document.querySelectorAll('.tag-subtree.parent-tag > a > .tag-switcher-wrapper')
+    for (const tagSwitcher of tagSwitchers) {
+      tagSwitcher.addEventListener('click', (e) => {
+        const parent = e.target.closest('.tag-subtree.parent-tag')
+        parent.classList.toggle('expanded')
+        e.preventDefault()
+      })
+    }
+
+    // Get active tag from query string, then activate it.
+    const urlParams = new URLSearchParams(window.location.search)
+    const activeTag = urlParams.get('tag')
+    if (activeTag) {
+      let tag = document.querySelector(`.tag-subtree[data-tag="${activeTag}"]`)
+      if (tag) {
+        tag.querySelector('a').classList.add('active')
+        
+        while (tag) {
+          tag.classList.add('expanded')
+          tag = tag.parentElement.closest('.tag-subtree.parent-tag')
+        }
+      }
+    }
+  })()
+</script>
+
+
+<!-- required -->
+<script src="/js/main.js?v=1.29.1" defer></script>
+
+<script type="text/javascript">
+  const applyTheme = (theme) => {
+    if (theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+
+    applyThemeToGiscus(theme)
+  }
+
+  const applyThemeToGiscus = (theme) => {
+    theme = theme === 'auto' ? 'preferred_color_scheme' : theme
+
+    const cmt = document.getElementById('giscus')
+    if (cmt) {
+      // This works before giscus load.
+      cmt.setAttribute('data-theme', theme)
+    }
+
+    const iframe = document.querySelector('#comments > section.giscus > iframe')
+    if (iframe) {
+      // This works after giscus loaded.
+      const src = iframe.src
+      const newSrc = src.replace(/theme=[\w]+/, `theme=${theme}`)
+      iframe.src = newSrc
+    }
+  }
+
+  const switchTheme = () => {
+    // light -> dark -> auto -> light -> ...
+    const currentTheme = document.documentElement.getAttribute('data-theme')
+    let newTheme;
+    switch (currentTheme) {
+      case 'light':
+        newTheme = 'dark'
+        break
+      case 'dark':
+        newTheme = 'auto'
+        break
+      default:
+        newTheme = 'light'
+    }
+    applyTheme(newTheme)
+    window.localStorage.setItem('Stellar.theme', newTheme)
+
+    const messages = {
+      light: `Switched to Light Mode`,
+      dark: `Switched to Dark Mode`,
+      auto: `Switched to Auto Mode`,
+    }
+    hud?.toast?.(messages[newTheme])
+  }
+
+  (() => {
+    // Apply user's preferred theme, if any.
+    const theme = window.localStorage.getItem('Stellar.theme')
+    if (theme !== null) {
+      applyTheme(theme)
+    }
+  })()
+</script>
+
+
+<!-- optional -->
+
+
+
+<script defer>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.services = Object.assign({}, JSON.parse(`{"mdrender":{"js":"/js/services/mdrender.js"},"siteinfo":{"js":"/js/services/siteinfo.js","api":null},"ghinfo":{"js":"/js/services/ghinfo.js"},"sites":{"js":"/js/services/sites.js"},"friends":{"js":"/js/services/friends.js"},"timeline":{"js":"/js/services/timeline.js"},"fcircle":{"js":"/js/services/fcircle.js"},"weibo":{"js":"/js/services/weibo.js"},"memos":{"js":"/js/services/memos.js"}}`));
+    for (let id of Object.keys(ctx.services)) {
+      const js = ctx.services[id].js;
+      if (id == 'siteinfo') {
+        ctx.cardlinks = document.querySelectorAll('a.link-card[cardlink]');
+        if (ctx.cardlinks?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            setCardLink(ctx.cardlinks);
+          });
+        }
+      } else {
+        const els = document.getElementsByClassName(`ds-${id}`);
+        if (els?.length > 0) {
+          utils.jq(() => {
+            if (id == 'timeline' || 'memos' || 'marked') {
+              utils.js(deps.marked).then(function () {
+                utils.js(js, { defer: true });
+              });
+            } else {
+              utils.js(js, { defer: true });
+            }
+          });
+        }
+      }
+    }
+  });
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.search = {
+      path: `/search.json`,
+    }
+    utils.js('/js/search/local-search.js', { defer: true });
+  });
+</script><script>
+  window.FPConfig = {
+    delay: 0,
+    ignoreKeywords: [],
+    maxRPS: 5,
+    hoverDelay: 25
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.min.js"></script>
+<script>
+  // https://www.npmjs.com/package/vanilla-lazyload
+  // Set the options globally
+  // to make LazyLoad self-initialize
+  window.lazyLoadOptions = {
+    elements_selector: ".lazy",
+  };
+  // Listen to the initialization event
+  // and get the instance of LazyLoad
+  window.addEventListener(
+    "LazyLoad::Initialized",
+    function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    },
+    false
+  );
+  document.addEventListener('DOMContentLoaded', function () {
+    window.lazyLoadInstance?.update();
+  });
+</script><script>
+  ctx.fancybox = {
+    selector: `.timenode p>img`,
+    css: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css`,
+    js: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js`
+  };
+  var selector = '[data-fancybox]:not(.error)';
+  if (ctx.fancybox.selector) {
+    selector += `, ${ctx.fancybox.selector}`
+  }
+  var needFancybox = document.querySelectorAll(selector).length !== 0;
+  if (!needFancybox) {
+    const els = document.getElementsByClassName('ds-memos');
+    if (els != undefined && els.length > 0) {
+      needFancybox = true;
+    }
+  }
+  if (needFancybox) {
+    utils.css(ctx.fancybox.css);
+    utils.js(ctx.fancybox.js, { defer: true }).then(function () {
+      Fancybox.bind(selector, {
+        hideScrollbar: false,
+        Thumbs: {
+          autoStart: false,
+        },
+        caption: (fancybox, slide) => {
+          return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null
+        }
+      });
+    })
+  }
+</script>
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const swiper_api = document.getElementById('swiper-api');
+    if (swiper_api != undefined) {
+      utils.css(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css`);
+      utils.js(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js`, { defer: true }).then(function () {
+        const effect = swiper_api.getAttribute('effect') || '';
+        var swiper = new Swiper('.swiper#swiper-api', {
+          slidesPerView: 'auto',
+          spaceBetween: 8,
+          centeredSlides: true,
+          effect: effect,
+          rewind: true,
+          pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+          },
+          navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          },
+        });
+      })
+    }
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    window.codeElements = document.querySelectorAll('.code');
+    if (window.codeElements.length > 0) {
+      ctx.copycode = {
+        default_text: `Copy`,
+        success_text: `Copied`,
+        toast: `复制成功`,
+      };
+      utils.js('/js/plugins/copycode.js');
+    }
+  });
+</script>
+
+
+<!-- inject -->
+
+</div></body></html>
