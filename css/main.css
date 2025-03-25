@@ -1,5 +1,5 @@
 :root {
-  --width-main: 720px;
+  --width-main: 1280px;
   --fsp: 17px;
   --fsh2: calc(var(--fsp) + 11px);
   --fsh3: calc(var(--fsp) + 7px);
@@ -12,12 +12,12 @@
 }
 @media screen and (min-width: 2048px) {
   :root {
-    --width-main: 780px;
+    --width-main: 1280px;
   }
 }
 @media screen and (min-width: 2560px) {
   :root {
-    --width-main: 860px;
+    --width-main: 1280px;
   }
 }
 @media screen and (max-width: 768px) {
