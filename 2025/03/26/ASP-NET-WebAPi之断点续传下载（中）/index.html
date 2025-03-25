@@ -1,0 +1,658 @@
+
+<!DOCTYPE html><html lang="zh-CH">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1" theme-name="Stellar" theme-version="1.29.1">
+  
+  <meta name="generator" content="Hexo 7.3.0">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  
+  <title>ASP.NET WebAPi之断点续传下载（中） - 无聊的橙子</title>
+
+  
+    <meta name="description" content="前言前情回顾：上一篇我们遗留了两个问题，一个是未完全实现断点续传，另外则是在响应时是返回StreamContent还是PushStreamContent呢？这一节我们重点来解决这两个问题，同时就在此过程中需要注意的地方一并指出，若有错误之处，请指出。 StreamContent compare to PushStreamContent我们来看看StreamContent代码，如下： 1234567">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ASP.NET WebAPi之断点续传下载（中）">
+<meta property="og:url" content="http://xclikee.github.io/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%AD%EF%BC%89/index.html">
+<meta property="og:site_name" content="无聊的橙子">
+<meta property="og:description" content="前言前情回顾：上一篇我们遗留了两个问题，一个是未完全实现断点续传，另外则是在响应时是返回StreamContent还是PushStreamContent呢？这一节我们重点来解决这两个问题，同时就在此过程中需要注意的地方一并指出，若有错误之处，请指出。 StreamContent compare to PushStreamContent我们来看看StreamContent代码，如下： 1234567">
+<meta property="og:locale" content="zh_CH">
+<meta property="og:image" content="http://xclikee.github.io/images/589642-20161119002941888-27755388.gif">
+<meta property="article:published_time" content="2025-03-25T16:00:17.000Z">
+<meta property="article:modified_time" content="2025-03-25T16:03:53.063Z">
+<meta property="article:author" content="XCLIKEE">
+<meta property="article:tag" content="博客,xclikee,代码，记录">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://xclikee.github.io/images/589642-20161119002941888-27755388.gif">
+  
+  
+  
+  <meta name="keywords" content="博客,xclikee,代码，记录">
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.29.1">
+
+  
+
+  
+
+  
+</head>
+<body>
+
+<div class="l_body s:aa content tech" id="start" layout="post" ><aside class="l_left"><div class="leftbar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="avatar" href="/about/"><div class="bg" style="opacity:0;background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp);"></div><img no-lazy class="avatar" src="/css/images/head.jpg" onerror="javascript:this.classList.add('error');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/2659360.svg';"></a><a class="title" href="/"><div class="main" ff="title">无聊的橙子</div><div class="sub normal cap">程序员</div><div class="sub hover cap" style="opacity:0"> 日常记录</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="Search"></form><div id="search-result"></div><div class="search-no-result">No Results!</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">Recent Update</span></div><div class="widget-body fs14"><a class="item title" href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%AD%EF%BC%89/"><span class="title">ASP.NET WebAPi之断点续传下载（中）</span></a><a class="item title" href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%8A%EF%BC%89/"><span class="title">ASP.NET WebAPi之断点续传下载（上）</span></a><a class="item title" href="/2025/03/24/mysql80%E6%93%8D%E4%BD%9C%E8%AE%B0%E5%BD%95/"><span class="title">mysql 8.0 操作记录</span></a><a class="item title" href="/2025/03/24/Unity%E5%AE%9E%E7%8E%B0UI%E7%9A%84%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E6%8B%96%E6%8B%BD%E6%8B%89%E4%BC%B8%E5%8A%9F%E8%83%BD/"><span class="title">Unity实现UI的边缘检测和拖拽拉伸功能</span></a><a class="item title" href="/2025/03/24/%E6%8C%89%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%B8%AD%E7%9A%84%E6%95%B0%E5%AD%97%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98/"><span class="title">c#按字符串中的数字排序问题</span></a><a class="item title" href="/2025/03/24/%E4%BF%AE%E5%A4%8DPlatformlO%E6%89%BE%E4%B8%8D%E5%88%B0%E8%BF%99%E6%A0%B7%E7%9A%84%E6%96%87%E4%BB%B6%E6%88%96%E8%80%85%E7%9B%AE%E5%BD%95/"><span class="title">修复 PlatformlO 找不到这样的文件或者目录</span></a><a class="item title" href="/2025/03/24/platformio-ide-build-%E9%94%99%E8%AF%AF/"><span class="title">platformio-ide.build 错误</span></a><a class="item title" href="/2025/03/24/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E9%9A%8F%E6%9C%BA%E8%8E%B7%E5%8F%96%E4%B8%80%E6%9D%A1%E6%88%96%E5%A4%9A%E6%9D%A1%E8%AE%B0%E5%BD%95/"><span class="title">MySQL数据库中随机获取一条或多条记录</span></a><a class="item title" href="/2025/03/24/%E5%A4%9A%E8%A1%A8%E8%81%94%E6%9F%A5%E6%9F%A5%E8%AF%A2%E7%BB%93%E6%9E%9C%E5%87%BA%E7%8E%B0%E9%87%8D%E5%A4%8D%E7%9A%84%E5%8E%9F%E5%9B%A0%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/"><span class="title">Mysql多表联查，查询结果出现重复的原因和解决方法</span></a><a class="item title" href="/2025/03/24/%E6%A3%80%E6%B5%8B%E9%BC%A0%E6%A0%87%E6%89%80%E7%82%B9%E5%87%BB%E7%9A%84%E6%8C%89%E9%92%AE%E4%BD%8D%E7%BD%AE%E6%98%AF%E5%90%A6%E6%98%AF%E9%80%8F%E6%98%8E%E7%9A%84/"><span class="title">检测鼠标所点击的按钮位置是否是透明的</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">Home</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">Blog</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">Posted on: <time datetime="2025-03-25T16:00:17.000Z">2025-03-26</time></span><span class="sep updated"></span><span class="text updated">Updated on: <time datetime="2025-03-25T16:03:53.063Z">2025-03-26</time></span></div></div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>ASP.NET WebAPi之断点续传下载（中）</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>前情回顾：上一篇我们遗留了两个问题，一个是未完全实现断点续传，另外则是在响应时是返回StreamContent还是PushStreamContent呢？这一节我们重点来解决这两个问题，同时就在此过程中需要注意的地方一并指出，若有错误之处，请指出。</p>
+<h2 id="StreamContent-compare-to-PushStreamContent"><a href="#StreamContent-compare-to-PushStreamContent" class="headerlink" title="StreamContent compare to PushStreamContent"></a>StreamContent compare to PushStreamContent</h2><p>我们来看看StreamContent代码，如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">public class StreamContent : HttpContent</span><br><span class="line">&#123;</span><br><span class="line">    // Fields</span><br><span class="line">    private int bufferSize;</span><br><span class="line">    private Stream content;</span><br><span class="line">    private bool contentConsumed;</span><br><span class="line">    private const int defaultBufferSize = 0x1000;</span><br><span class="line">    private long start;</span><br><span class="line"></span><br><span class="line">    // Methods</span><br><span class="line">    public StreamContent(Stream content);</span><br><span class="line"></span><br><span class="line">    public StreamContent(Stream content, int bufferSize);</span><br><span class="line"> </span><br><span class="line">    protected override Task&lt;Stream&gt; CreateContentReadStreamAsync();</span><br><span class="line"></span><br><span class="line">    protected override void Dispose(bool disposing);</span><br><span class="line">    private void PrepareContent();</span><br><span class="line"></span><br><span class="line">    protected override Task SerializeToStreamAsync(Stream stream, TransportContext context);</span><br><span class="line"></span><br><span class="line">    protected internal override bool TryComputeLength(out long length);</span><br><span class="line"></span><br><span class="line">    // Nested Types</span><br><span class="line">    private class ReadOnlyStream : DelegatingStream</span><br><span class="line">    &#123;......&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>似乎没有什么可看的，但是有一句话我们需要注意，如下：</p>
+<p> <code>private const int defaultBufferSize = 0x1000;</code></p>
+<p>在StreamContent的第二个构造函数为</p>
+<p> <code>public StreamContent(Stream content, int bufferSize);</code></p>
+<p>上述给定的默认一次性输入到缓冲区大小为4k，这对我们有何意义呢？当我们写入到响应中时，一般我们直接利用的是第一个构造函数，如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var response = new HttpResponseMessage();</span><br><span class="line">response.Content \= new StreamContent(fileStream);</span><br></pre></td></tr></table></figure>
+<p>到这里我们明白了这么做是有问题的，当下载时默认读取的是4k，如果文件比较大下载的时间则有延长，所以我们在返回时一定要给定缓冲大小，那么给定多少呢？为达到更好的性能最多是80k，如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">private const int BufferSize = 80 \* 1024;</span><br><span class="line">response.Content \= new StreamContent(fileStream, BufferSize);</span><br></pre></td></tr></table></figure>
+<p>此时下载的速度则有很大的改善，有人就说了为何是80k呢？这个问题我也不知道，老外验证过的，这是链接【<a target="_blank" rel="noopener" href="http://stackoverflow.com/questions/1540658/net-asynchronous-stream-read-write/19692949#19692949">.NET Asynchronous stream read&#x2F;write</a>】。</p>
+<p>好了说完StreamContent，接下来我们来看看PushStreamContent，从字面意思来为推送流内容，难道是充分利用了缓冲区吗，猜测可以有，就怕没有任何想法，我们用源码来证明看看。</p>
+<p>我们只需看看WebHost模式下对于缓冲策略是怎么选择的，我们看看此类 WebHostBufferPolicySelector  实现，代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> /// &lt;summary&gt;</span><br><span class="line">/// Provides an implementation of &lt;see cref=&quot;IHostBufferPolicySelector&quot;/&gt; suited for use</span><br><span class="line">/// in an ASP.NET environment which provides direct support for input and output buffering.</span><br><span class="line">/// &lt;/summary&gt;</span><br><span class="line">public class WebHostBufferPolicySelector : IHostBufferPolicySelector</span><br><span class="line">&#123;</span><br><span class="line">    ....../// &lt;summary&gt;</span><br><span class="line">    /// Determines whether the host should buffer the &lt;see cref=&quot;HttpResponseMessage&quot;/&gt; entity body.</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    /// &lt;param name=&quot;response&quot;&gt;The &lt;see cref=&quot;HttpResponseMessage&quot;/&gt;response for which to determine</span><br><span class="line">    /// whether host output buffering should be used for the response entity body.&lt;/param&gt;</span><br><span class="line">    /// &lt;returns&gt;&lt;c&gt;true&lt;/c&gt; if buffering should be used; otherwise a streamed response should be used.&lt;/returns&gt;</span><br><span class="line">    public virtual bool UseBufferedOutputStream(HttpResponseMessage response)</span><br><span class="line">    &#123;</span><br><span class="line">        if (response == null)</span><br><span class="line">        &#123;</span><br><span class="line">            throw Error.ArgumentNull(&quot;response&quot;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        // Any HttpContent that knows its length is presumably already buffered internally.</span><br><span class="line">        HttpContent content = response.Content;</span><br><span class="line">        if (content != null)</span><br><span class="line">        &#123;</span><br><span class="line">            long? contentLength = content.Headers.ContentLength;</span><br><span class="line">            if (contentLength.HasValue &amp;&amp; contentLength.Value &gt;= 0)</span><br><span class="line">            &#123;</span><br><span class="line">                return false;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            // Content length is null or -1 (meaning not known).  </span><br><span class="line">            // Buffer any HttpContent except StreamContent and PushStreamContent</span><br><span class="line">            return !(content is StreamContent || content is PushStreamContent);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>从上述如下一句可以很明显的知道：</p>
+<p> <code>return !(content is StreamContent || content is PushStreamContent);</code></p>
+<p>除了StreamContent和PushStreamContent的HttpContent之外，其余都进行缓冲，所以二者的区别不在于缓冲，那到底是什么呢？好了我们还未查看PushStreamContent的源码，我们继续往下走，查看其源代码如下，我们仅仅只看关于这个类的描述以及第一个构造函数即可，如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">/// &lt;summary&gt;</span><br><span class="line">  /// Provides an &lt;see cref=&quot;HttpContent&quot;/&gt; implementation that exposes an output &lt;see cref=&quot;Stream&quot;/&gt;</span><br><span class="line">  /// which can be written to directly. The ability to push data to the output stream differs from the </span><br><span class="line">  /// &lt;see cref=&quot;StreamContent&quot;/&gt; where data is pulled and not pushed.</span><br><span class="line">  /// &lt;/summary&gt;</span><br><span class="line">  public class PushStreamContent : HttpContent</span><br><span class="line">  &#123;</span><br><span class="line">      private readonly Func&lt;Stream, HttpContent, TransportContext, Task&gt; \_onStreamAvailable;</span><br><span class="line"></span><br><span class="line">      /// &lt;summary&gt;</span><br><span class="line">      /// Initializes a new instance of the &lt;see cref=&quot;PushStreamContent&quot;/&gt; class. The</span><br><span class="line">      /// &lt;paramref name=&quot;onStreamAvailable&quot;/&gt; action is called when an output stream</span><br><span class="line">      /// has become available allowing the action to write to it directly. When the </span><br><span class="line">      /// stream is closed, it will signal to the content that is has completed and the </span><br><span class="line">      /// HTTP request or response will be completed.</span><br><span class="line">      /// &lt;/summary&gt;</span><br><span class="line">      /// &lt;param name=&quot;onStreamAvailable&quot;&gt;The action to call when an output stream is available.&lt;/param&gt;</span><br><span class="line">      public PushStreamContent(Action&lt;Stream, HttpContent, TransportContext&gt; onStreamAvailable)</span><br><span class="line">          : this(Taskify(onStreamAvailable), (MediaTypeHeaderValue)null)</span><br><span class="line">      &#123;</span><br><span class="line">      &#125;  </span><br><span class="line">      ......</span><br><span class="line"> &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>对于此类的描述大意是：PushStreamContent与StreamContent的不同在于，PushStreamContent在于将数据push【推送】到输出流中，而StreamContent则是将数据从流中【拉取】。 </p>
+<p>貌似有点晦涩，我们来举个例子，在webapi中我们常常这样做，读取文件流并返回到响应流中，若是StreamContent，我们会如下这样做：</p>
+<p><code>response.Content = new StreamContent(File.OpenRead(filePath));</code></p>
+<p>上面的释义我用大括号着重括起，StreamContent着重于【拉取】，当响应时此时将从文件流写到输出流，通俗一点说则是我们需要从文件流中去获取数据并写入到输出流中。我们再来看看PushStreamContent的用法，如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">XDocument xDoc = XDocument.Load(&quot;cnblogs\_backup.xml&quot;, LoadOptions.None);</span><br><span class="line">PushStreamContent xDocContent \= new PushStreamContent(</span><br><span class="line">(stream, content, context) \=&gt;</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">     xDoc.Save(stream);</span><br><span class="line">     stream.Close();</span><br><span class="line">&#125;,</span><br><span class="line">&quot;application/xml&quot;);</span><br></pre></td></tr></table></figure>
+
+
+<p>PushStreamContent着重于【推送】，当我们加载xml文件时，当我们一旦进行保存时此时则会将数据推送到输出流中。</p>
+<p>二者区别在于：StreamContent从流中【拉取】数据，而PushStreamContent则是将数据【推送】到流中。</p>
+<h3 id="那么此二者应用的场景是什么呢？"><a href="#那么此二者应用的场景是什么呢？" class="headerlink" title="那么此二者应用的场景是什么呢？"></a>那么此二者应用的场景是什么呢？</h3><p>（1）对于下载文件我们则可以通过StreamContent来实现直接从流中拉取，若下载视频流此时则应该利用PushStreamContent来实现，因为未知服务器视频资源的长度，此视频资源来源于别的地方。</p>
+<p>（2）数据量巨大，发送请求到webapi时利用PushStreamContent。</p>
+<p>当发送请求时，常常序列化数据并请求webapi，我们可能这样做：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var client = new HttpClient();</span><br><span class="line">string json = JsonConvert.SerializeObject(data);</span><br><span class="line">var response = await client.PostAsync(uri, new StringContent(json));</span><br></pre></td></tr></table></figure>
+<p>当数据量比较小时没问题，若数据比较大时进行序列化此时则将序列化的字符串加载到内存中，鉴于此这么做不可行，此时我们应该利用PushStreamContent来实现。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">var client = new HttpClient();</span><br><span class="line">var content = new PushStreamContent((stream, httpContent, transportContext) =&gt;</span><br><span class="line">&#123;</span><br><span class="line">    var serializer = new JsonSerializer();</span><br><span class="line">    using (var writer = new StreamWriter(stream))</span><br><span class="line">    &#123;</span><br><span class="line">        serializer.Serialize(writer, data);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br><span class="line">var response = await client.PostAsync(uri, content);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为什么要这样做呢？我们再来看看源码，里面存在这样一个方法。</p>
+<p>  <code>protected override Task SerializeToStreamAsync(Stream stream, TransportContext context);</code></p>
+<p>其内部实现利用异步状态机实现，所以当数据量巨大时利用PushStreamContent来返回将会有很大的改善，至此，关于二者的区别以及常见的应用场景已经叙述完毕，接下来我们继续断点续传问题。</p>
+<h2 id="断点续传改进"><a href="#断点续传改进" class="headerlink" title="断点续传改进 "></a>断点续传改进 </h2><p>上一篇我们讲过获取Range属性中的集合通过如下：</p>
+<p><code>request.Headers.Range</code></p>
+<p>我们只取该集合中的第一个范围元素，通过如下</p>
+<p> <code>RangeItemHeaderValue range = rangeHeader.Ranges.First();</code></p>
+<p>此时我们忽略了返回的该范围对象中有当前下载的进度</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">range.From.HasValue  </span><br><span class="line">range.To.HasValue</span><br></pre></td></tr></table></figure>
+<p>我们获取二者的值然后进行重写Stream实时读取剩余部分，下面我们一步一步来看。</p>
+<h3 id="定义文件操作接口"><a href="#定义文件操作接口" class="headerlink" title="定义文件操作接口"></a>定义文件操作接口</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">public interface IFileProvider</span><br><span class="line">&#123;</span><br><span class="line">    bool Exists(string name);</span><br><span class="line">    FileStream Open(string name);</span><br><span class="line">    long GetLength(string name);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="实现该操作文件接口"><a href="#实现该操作文件接口" class="headerlink" title="实现该操作文件接口"></a>实现该操作文件接口</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">public class FileProvider : IFileProvider</span><br><span class="line">&#123;</span><br><span class="line">    private readonly string \_filesDirectory;</span><br><span class="line">    private const string AppSettingsKey = &quot;DownloadDir&quot;;</span><br><span class="line"></span><br><span class="line">    public FileProvider()</span><br><span class="line">    &#123;</span><br><span class="line">        var fileLocation = ConfigurationManager.AppSettings\[AppSettingsKey\];</span><br><span class="line">        if (!String.IsNullOrWhiteSpace(fileLocation))</span><br><span class="line">        &#123;</span><br><span class="line">            \_filesDirectory \= fileLocation;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /// &lt;summary&gt;</span><br><span class="line">    /// 判断文件是否存在</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    /// &lt;param name=&quot;name&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;returns&gt;&lt;/returns&gt;</span><br><span class="line">    public bool Exists(string name)</span><br><span class="line">    &#123;</span><br><span class="line">        string file = Directory.GetFiles(\_filesDirectory, name, SearchOption.TopDirectoryOnly)</span><br><span class="line">                .FirstOrDefault();</span><br><span class="line">        return true;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    /// &lt;summary&gt;</span><br><span class="line">    /// 打开文件</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    /// &lt;param name=&quot;name&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;returns&gt;&lt;/returns&gt;</span><br><span class="line">    public FileStream Open(string name)</span><br><span class="line">    &#123;</span><br><span class="line">        var fullFilePath = Path.Combine(\_filesDirectory, name);</span><br><span class="line">        return File.Open(fullFilePath,</span><br><span class="line">            FileMode.Open, FileAccess.Read, FileShare.Read);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /// &lt;summary&gt;</span><br><span class="line">    /// 获取文件长度</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    /// &lt;param name=&quot;name&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;returns&gt;&lt;/returns&gt;</span><br><span class="line">    public long GetLength(string name)</span><br><span class="line">    &#123;</span><br><span class="line">        var fullFilePath = Path.Combine(\_filesDirectory, name);</span><br><span class="line">        return new FileInfo(fullFilePath).Length;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="获取范围对象中的值进行赋值给封装的对象"><a href="#获取范围对象中的值进行赋值给封装的对象" class="headerlink" title="获取范围对象中的值进行赋值给封装的对象"></a>获取范围对象中的值进行赋值给封装的对象</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">public class FileInfo</span><br><span class="line">&#123;</span><br><span class="line">    public long From;</span><br><span class="line">    public long To;</span><br><span class="line">    public bool IsPartial;</span><br><span class="line">    public long Length;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="下载控制器，对文件操作进行初始化"><a href="#下载控制器，对文件操作进行初始化" class="headerlink" title="下载控制器，对文件操作进行初始化"></a>下载控制器，对文件操作进行初始化</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public class FileDownloadController : ApiController</span><br><span class="line">&#123;</span><br><span class="line">    private const int BufferSize = 80 \* 1024;</span><br><span class="line">    private const string MimeType = &quot;application/octet-stream&quot;;</span><br><span class="line">    public IFileProvider FileProvider &#123; get; set; &#125;</span><br><span class="line">    public FileDownloadController()</span><br><span class="line">    &#123;</span><br><span class="line">        FileProvider \= new FileProvider();</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>接下来则是文件下载的逻辑，首先判断请求文件是否存在，然后获取文件的长度</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">if (!FileProvider.Exists(fileName))</span><br><span class="line">&#123;</span><br><span class="line">    throw new HttpResponseException(HttpStatusCode.NotFound);</span><br><span class="line">&#125;</span><br><span class="line">long fileLength = FileProvider.GetLength(fileName);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="将请求中的范围对象From和To的值并判断当前已经下载进度以及剩余进度"><a href="#将请求中的范围对象From和To的值并判断当前已经下载进度以及剩余进度" class="headerlink" title="将请求中的范围对象From和To的值并判断当前已经下载进度以及剩余进度"></a>将请求中的范围对象From和To的值并判断当前已经下载进度以及剩余进度</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">private FileInfo GetFileInfoFromRequest(HttpRequestMessage request, long entityLength)</span><br><span class="line">&#123;</span><br><span class="line">    var fileInfo = new FileInfo</span><br><span class="line">    &#123;</span><br><span class="line">        From \= 0,</span><br><span class="line">        To \= entityLength - 1,</span><br><span class="line">        IsPartial \= false,</span><br><span class="line">        Length \= entityLength</span><br><span class="line">    &#125;;</span><br><span class="line">    var rangeHeader = request.Headers.Range;</span><br><span class="line">    if (rangeHeader != null &amp;&amp; rangeHeader.Ranges.Count != 0)</span><br><span class="line">    &#123;</span><br><span class="line">        if (rangeHeader.Ranges.Count &gt; 1)</span><br><span class="line">        &#123;</span><br><span class="line">            throw new HttpResponseException(HttpStatusCode.RequestedRangeNotSatisfiable);</span><br><span class="line">        &#125;</span><br><span class="line">        RangeItemHeaderValue range \= rangeHeader.Ranges.First();</span><br><span class="line">        if (range.From.HasValue &amp;&amp; range.From &lt; 0 || range.To.HasValue &amp;&amp; range.To &gt; entityLength - 1)</span><br><span class="line">        &#123;</span><br><span class="line">            throw new HttpResponseException(HttpStatusCode.RequestedRangeNotSatisfiable);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        fileInfo.From \= range.From ?? 0;</span><br><span class="line">        fileInfo.To \= range.To ?? entityLength - 1;</span><br><span class="line">        fileInfo.IsPartial \= true;</span><br><span class="line">        fileInfo.Length \= entityLength;</span><br><span class="line">        if (range.From.HasValue &amp;&amp; range.To.HasValue)</span><br><span class="line">        &#123;</span><br><span class="line">            fileInfo.Length \= range.To.Value - range.From.Value + 1;</span><br><span class="line">        &#125;</span><br><span class="line">        else if (range.From.HasValue)</span><br><span class="line">        &#123;</span><br><span class="line">            fileInfo.Length \= entityLength - range.From.Value + 1;</span><br><span class="line">        &#125;</span><br><span class="line">        else if (range.To.HasValue)</span><br><span class="line">        &#123;</span><br><span class="line">            fileInfo.Length \= range.To.Value + 1;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return fileInfo;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="在响应头信息中的对象ContentRangeHeaderValue设置当前下载进度以及其他响应信息"><a href="#在响应头信息中的对象ContentRangeHeaderValue设置当前下载进度以及其他响应信息" class="headerlink" title="在响应头信息中的对象ContentRangeHeaderValue设置当前下载进度以及其他响应信息"></a>在响应头信息中的对象ContentRangeHeaderValue设置当前下载进度以及其他响应信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">private void SetResponseHeaders(HttpResponseMessage response, FileInfo fileInfo,</span><br><span class="line">                                      long fileLength, string fileName)</span><br><span class="line">        &#123;</span><br><span class="line">            response.Headers.AcceptRanges.Add(&quot;bytes&quot;);</span><br><span class="line">            response.StatusCode \= fileInfo.IsPartial ? HttpStatusCode.PartialContent</span><br><span class="line">                                      : HttpStatusCode.OK;</span><br><span class="line">            response.Content.Headers.ContentDisposition \= new ContentDispositionHeaderValue(&quot;attachment&quot;);</span><br><span class="line">            response.Content.Headers.ContentDisposition.FileName \= fileName;</span><br><span class="line">            response.Content.Headers.ContentType \= new MediaTypeHeaderValue(MimeType);</span><br><span class="line">            response.Content.Headers.ContentLength \= fileInfo.Length;</span><br><span class="line">            if (fileInfo.IsPartial)</span><br><span class="line">            &#123;</span><br><span class="line">                response.Content.Headers.ContentRange</span><br><span class="line">                    \= new ContentRangeHeaderValue(fileInfo.From, fileInfo.To, fileLength);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>最重要的一步则是将FileInfo对象的值传递给我们自定义实现的流监控当前下载进度。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">public class PartialContentFileStream : Stream</span><br><span class="line">&#123;</span><br><span class="line">    private readonly long \_start;</span><br><span class="line">    private readonly long \_end;</span><br><span class="line">    private long \_position;</span><br><span class="line">    private FileStream \_fileStream;</span><br><span class="line">    public PartialContentFileStream(FileStream fileStream, long start, long end)</span><br><span class="line">    &#123;</span><br><span class="line">        \_start \= start;</span><br><span class="line">        \_position \= start;</span><br><span class="line">        \_end \= end;</span><br><span class="line">        \_fileStream \= fileStream;</span><br><span class="line"></span><br><span class="line">        if (start &gt; 0)</span><br><span class="line">        &#123;</span><br><span class="line">            \_fileStream.Seek(start, SeekOrigin.Begin);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /// &lt;summary&gt;</span><br><span class="line">    /// 将缓冲区数据写到文件</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    public override void Flush()</span><br><span class="line">    &#123;</span><br><span class="line">        \_fileStream.Flush();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /// &lt;summary&gt;</span><br><span class="line">    /// 设置当前下载位置</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    /// &lt;param name=&quot;offset&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;param name=&quot;origin&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;returns&gt;&lt;/returns&gt;</span><br><span class="line">    public override long Seek(long offset, SeekOrigin origin)</span><br><span class="line">    &#123;</span><br><span class="line">        if (origin == SeekOrigin.Begin)</span><br><span class="line">        &#123;</span><br><span class="line">            \_position \= \_start + offset;</span><br><span class="line">            return \_fileStream.Seek(\_start + offset, origin);</span><br><span class="line">        &#125;</span><br><span class="line">        else if (origin == SeekOrigin.Current)</span><br><span class="line">        &#123;</span><br><span class="line">            \_position += offset;</span><br><span class="line">            return \_fileStream.Seek(\_position + offset, origin);</span><br><span class="line">        &#125;</span><br><span class="line">        else</span><br><span class="line">        &#123;</span><br><span class="line">            throw new NotImplementedException(&quot;SeekOrigin.End未实现&quot;);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /// &lt;summary&gt;</span><br><span class="line">    /// 依据偏离位置读取</span><br><span class="line">    /// &lt;/summary&gt;</span><br><span class="line">    /// &lt;param name=&quot;buffer&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;param name=&quot;offset&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;param name=&quot;count&quot;&gt;&lt;/param&gt;</span><br><span class="line">    /// &lt;returns&gt;&lt;/returns&gt;</span><br><span class="line">    public override int Read(byte\[\] buffer, int offset, int count)</span><br><span class="line">    &#123;</span><br><span class="line">        int byteCountToRead = count;</span><br><span class="line">        if (\_position + count &gt; \_end)</span><br><span class="line">        &#123;</span><br><span class="line">            byteCountToRead \= (int)(\_end - \_position) + 1;</span><br><span class="line">        &#125;</span><br><span class="line">        var result = \_fileStream.Read(buffer, offset, byteCountToRead);</span><br><span class="line">        \_position += byteCountToRead;</span><br><span class="line">        return result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public override IAsyncResult BeginRead(byte\[\] buffer, int offset, int count, AsyncCallback callback, object state)</span><br><span class="line">    &#123;</span><br><span class="line">        int byteCountToRead = count;</span><br><span class="line">        if (\_position + count &gt; \_end)</span><br><span class="line">        &#123;</span><br><span class="line">            byteCountToRead \= (int)(\_end - \_position);</span><br><span class="line">        &#125;</span><br><span class="line">        var result = \_fileStream.BeginRead(buffer, offset,</span><br><span class="line">                                           count, (s) \=&gt;</span><br><span class="line">                                           &#123;</span><br><span class="line">                                               \_position += byteCountToRead;</span><br><span class="line">                                               callback(s);</span><br><span class="line">                                           &#125;, state);</span><br><span class="line">        return result;</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="更新上述下载的完整逻辑"><a href="#更新上述下载的完整逻辑" class="headerlink" title="更新上述下载的完整逻辑"></a>更新上述下载的完整逻辑</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">public HttpResponseMessage GetFile(string fileName)</span><br><span class="line">&#123;</span><br><span class="line">    fileName \= &quot;HBuilder.windows.5.2.6.zip&quot;;</span><br><span class="line">    if (!FileProvider.Exists(fileName))</span><br><span class="line">    &#123;</span><br><span class="line">        throw new HttpResponseException(HttpStatusCode.NotFound);</span><br><span class="line">    &#125;</span><br><span class="line">    long fileLength = FileProvider.GetLength(fileName);</span><br><span class="line">    var fileInfo = GetFileInfoFromRequest(this.Request, fileLength);</span><br><span class="line"></span><br><span class="line">    var stream = new PartialContentFileStream(FileProvider.Open(fileName),</span><br><span class="line">                                         fileInfo.From, fileInfo.To);</span><br><span class="line">    var response = new HttpResponseMessage();</span><br><span class="line">    response.Content \= new StreamContent(stream, BufferSize);</span><br><span class="line">    SetResponseHeaders(response, fileInfo, fileLength, fileName);</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>下面我们来看看演示结果：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/589642-20161119002941888-27755388.gif"></p>
+<p>好了，到了这里我们也得到了我们想要的结果。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结 "></a>总结 </h2><p>本节我们将上节遗留的问题一一进行比较详细的叙述并最终解决，是不是就这么完全结束了呢？那本节定义为中篇岂不是不对头了，本节是在web端进行下载，下节我们利用webclient来进行断点续传。想了想无论是mvc上传下载，还是利用webapi来上传下载又或者是将mvc和webapi结合来上传下载基本都已经囊括，这都算是在项目中比较常用的吧，所以也就花了很多时间去研究。对于webapi的断点续传关键它本身就提供了比较多的api来给我们调用，所以还是很不错，webapi一个很轻量的服务框架，你值得拥有see u，反正周末，哟，不早了，休息休息。</p>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/CreateMyself/p/6078052.html">https://www.cnblogs.com/CreateMyself/p/6078052.html</a>，如有侵权，请联系删除。</p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>License</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"></div><div class="item" id="next"><div class="note">Older</div><a href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%8A%EF%BC%89/">ASP.NET WebAPi之断点续传下载（上）</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">XCLIKEE</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1">Stellar 1.29.1</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class="main-mask" onclick="sidebar.dismiss()"></div></div><aside class="l_right">
+<div class="widgets">
+
+
+
+<widget class="widget-wrapper toc" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">On This Page</span><a class="cap-action" onclick="sidebar.toggleTOC()" ><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></a></div><div class="widget-body"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-text">前言</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#StreamContent-compare-to-PushStreamContent"><span class="toc-text">StreamContent compare to PushStreamContent</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%82%A3%E4%B9%88%E6%AD%A4%E4%BA%8C%E8%80%85%E5%BA%94%E7%94%A8%E7%9A%84%E5%9C%BA%E6%99%AF%E6%98%AF%E4%BB%80%E4%B9%88%E5%91%A2%EF%BC%9F"><span class="toc-text">那么此二者应用的场景是什么呢？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E6%94%B9%E8%BF%9B"><span class="toc-text">断点续传改进 </span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9A%E4%B9%89%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%8E%A5%E5%8F%A3"><span class="toc-text">定义文件操作接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E8%AF%A5%E6%93%8D%E4%BD%9C%E6%96%87%E4%BB%B6%E6%8E%A5%E5%8F%A3"><span class="toc-text">实现该操作文件接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E8%8C%83%E5%9B%B4%E5%AF%B9%E8%B1%A1%E4%B8%AD%E7%9A%84%E5%80%BC%E8%BF%9B%E8%A1%8C%E8%B5%8B%E5%80%BC%E7%BB%99%E5%B0%81%E8%A3%85%E7%9A%84%E5%AF%B9%E8%B1%A1"><span class="toc-text">获取范围对象中的值进行赋值给封装的对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8B%E8%BD%BD%E6%8E%A7%E5%88%B6%E5%99%A8%EF%BC%8C%E5%AF%B9%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E8%BF%9B%E8%A1%8C%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-text">下载控制器，对文件操作进行初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%86%E8%AF%B7%E6%B1%82%E4%B8%AD%E7%9A%84%E8%8C%83%E5%9B%B4%E5%AF%B9%E8%B1%A1From%E5%92%8CTo%E7%9A%84%E5%80%BC%E5%B9%B6%E5%88%A4%E6%96%AD%E5%BD%93%E5%89%8D%E5%B7%B2%E7%BB%8F%E4%B8%8B%E8%BD%BD%E8%BF%9B%E5%BA%A6%E4%BB%A5%E5%8F%8A%E5%89%A9%E4%BD%99%E8%BF%9B%E5%BA%A6"><span class="toc-text">将请求中的范围对象From和To的值并判断当前已经下载进度以及剩余进度</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%A8%E5%93%8D%E5%BA%94%E5%A4%B4%E4%BF%A1%E6%81%AF%E4%B8%AD%E7%9A%84%E5%AF%B9%E8%B1%A1ContentRangeHeaderValue%E8%AE%BE%E7%BD%AE%E5%BD%93%E5%89%8D%E4%B8%8B%E8%BD%BD%E8%BF%9B%E5%BA%A6%E4%BB%A5%E5%8F%8A%E5%85%B6%E4%BB%96%E5%93%8D%E5%BA%94%E4%BF%A1%E6%81%AF"><span class="toc-text">在响应头信息中的对象ContentRangeHeaderValue设置当前下载进度以及其他响应信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E6%96%B0%E4%B8%8A%E8%BF%B0%E4%B8%8B%E8%BD%BD%E7%9A%84%E5%AE%8C%E6%95%B4%E9%80%BB%E8%BE%91"><span class="toc-text">更新上述下载的完整逻辑</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结 </span></a></li></ol></li></ol></div><div class="widget-footer">
+
+<a class="top" onclick="util.scrollTop()"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.535 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 15.5l3-3l3 3m-6-4l3-3l3 3"/></g></svg><span>Scroll to Top</span></a></div></widget>
+</div></aside><div class='float-panel blur'>
+  <button type='button' style='display:none' class='laptop-only rightbar-toggle mobile' onclick='sidebar.rightbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button type='button' style='display:none' class='mobile-only leftbar-toggle mobile' onclick='sidebar.leftbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+</div><div class="scripts">
+<script type="text/javascript">
+  const ctx = {
+    date_suffix: {
+      just: `Just`,
+      min: `minutes ago`,
+      hour: `hours ago`,
+      day: `days ago`,
+    },
+    root : `/`,
+  };
+
+  // required plugins (only load if needs)
+  if (`local_search`) {
+    ctx.search = {};
+    ctx.search.service = `local_search`;
+    if (ctx.search.service == 'local_search') {
+      let service_obj = Object.assign({}, `{"field":"all","path":"/search.json","content":true,"sort":"-date"}`);
+      ctx.search[ctx.search.service] = service_obj;
+    }
+  }
+  const def = {
+    avatar: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg`,
+    cover: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/cover/76b86c0226ffd.svg`,
+  };
+  const deps = {
+    jquery: `https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js`,
+    marked: `https://cdn.jsdelivr.net/npm/marked@13.0.1/lib/marked.umd.min.js`
+  }
+  
+
+</script>
+
+<script type="text/javascript">
+  const utils = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    css: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    js: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = ctx.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    jq: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        utils.js(deps.jquery).then(fn)
+      } else {
+        fn()
+      }
+    },
+    
+    onLoading: (el) => {
+      if (el) {
+        $(el).append('<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+      }
+    },
+    onLoadSuccess: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap').remove();
+      }
+    },
+    onLoadFailure: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap svg').remove();
+        $(el).find('.loading-wrap').append('<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+        $(el).find('.loading-wrap').addClass('error');
+      }
+    },
+    request: (el, url, callback, onFailure) => {
+      let retryTimes = 3;
+      utils.onLoading(el);
+      function req() {
+        return new Promise((resolve, reject) => {
+          let status = 0; // 0 等待 1 完成 2 超时
+          let timer = setTimeout(() => {
+            if (status === 0) {
+              status = 2;
+              timer = null;
+              reject('请求超时');
+              if (retryTimes == 0) {
+                onFailure();
+              }
+            }
+          }, 5000);
+          fetch(url).then(function(response) {
+            if (status !== 2) {
+              clearTimeout(timer);
+              resolve(response);
+              timer = null;
+              status = 1;
+            }
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Network response was not ok.');
+          }).then(function(data) {
+            retryTimes = 0;
+            utils.onLoadSuccess(el);
+            callback(data);
+          }).catch(function(error) {
+            if (retryTimes > 0) {
+              retryTimes -= 1;
+              setTimeout(() => {
+                req();
+              }, 5000);
+            } else {
+              utils.onLoadFailure(el);
+              onFailure();
+            }
+          });
+        });
+      }
+      req();
+    },
+  };
+</script>
+
+<script>
+  const sidebar = {
+    leftbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    rightbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('rightbar');
+        l_body.removeAttribute('leftbar');
+      }
+    },
+    dismiss: () => {
+      if (l_body) {
+        l_body.removeAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    toggleTOC: () => {
+      document.querySelector('#data-toc').classList.toggle('collapse');
+    }
+  }
+</script>
+<script type="text/javascript">
+  (() => {
+    const tagSwitchers = document.querySelectorAll('.tag-subtree.parent-tag > a > .tag-switcher-wrapper')
+    for (const tagSwitcher of tagSwitchers) {
+      tagSwitcher.addEventListener('click', (e) => {
+        const parent = e.target.closest('.tag-subtree.parent-tag')
+        parent.classList.toggle('expanded')
+        e.preventDefault()
+      })
+    }
+
+    // Get active tag from query string, then activate it.
+    const urlParams = new URLSearchParams(window.location.search)
+    const activeTag = urlParams.get('tag')
+    if (activeTag) {
+      let tag = document.querySelector(`.tag-subtree[data-tag="${activeTag}"]`)
+      if (tag) {
+        tag.querySelector('a').classList.add('active')
+        
+        while (tag) {
+          tag.classList.add('expanded')
+          tag = tag.parentElement.closest('.tag-subtree.parent-tag')
+        }
+      }
+    }
+  })()
+</script>
+
+
+<!-- required -->
+<script src="/js/main.js?v=1.29.1" defer></script>
+
+<script type="text/javascript">
+  const applyTheme = (theme) => {
+    if (theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+
+    applyThemeToGiscus(theme)
+  }
+
+  const applyThemeToGiscus = (theme) => {
+    theme = theme === 'auto' ? 'preferred_color_scheme' : theme
+
+    const cmt = document.getElementById('giscus')
+    if (cmt) {
+      // This works before giscus load.
+      cmt.setAttribute('data-theme', theme)
+    }
+
+    const iframe = document.querySelector('#comments > section.giscus > iframe')
+    if (iframe) {
+      // This works after giscus loaded.
+      const src = iframe.src
+      const newSrc = src.replace(/theme=[\w]+/, `theme=${theme}`)
+      iframe.src = newSrc
+    }
+  }
+
+  const switchTheme = () => {
+    // light -> dark -> auto -> light -> ...
+    const currentTheme = document.documentElement.getAttribute('data-theme')
+    let newTheme;
+    switch (currentTheme) {
+      case 'light':
+        newTheme = 'dark'
+        break
+      case 'dark':
+        newTheme = 'auto'
+        break
+      default:
+        newTheme = 'light'
+    }
+    applyTheme(newTheme)
+    window.localStorage.setItem('Stellar.theme', newTheme)
+
+    const messages = {
+      light: `Switched to Light Mode`,
+      dark: `Switched to Dark Mode`,
+      auto: `Switched to Auto Mode`,
+    }
+    hud?.toast?.(messages[newTheme])
+  }
+
+  (() => {
+    // Apply user's preferred theme, if any.
+    const theme = window.localStorage.getItem('Stellar.theme')
+    if (theme !== null) {
+      applyTheme(theme)
+    }
+  })()
+</script>
+
+
+<!-- optional -->
+
+
+
+<script defer>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.services = Object.assign({}, JSON.parse(`{"mdrender":{"js":"/js/services/mdrender.js"},"siteinfo":{"js":"/js/services/siteinfo.js","api":null},"ghinfo":{"js":"/js/services/ghinfo.js"},"sites":{"js":"/js/services/sites.js"},"friends":{"js":"/js/services/friends.js"},"timeline":{"js":"/js/services/timeline.js"},"fcircle":{"js":"/js/services/fcircle.js"},"weibo":{"js":"/js/services/weibo.js"},"memos":{"js":"/js/services/memos.js"}}`));
+    for (let id of Object.keys(ctx.services)) {
+      const js = ctx.services[id].js;
+      if (id == 'siteinfo') {
+        ctx.cardlinks = document.querySelectorAll('a.link-card[cardlink]');
+        if (ctx.cardlinks?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            setCardLink(ctx.cardlinks);
+          });
+        }
+      } else {
+        const els = document.getElementsByClassName(`ds-${id}`);
+        if (els?.length > 0) {
+          utils.jq(() => {
+            if (id == 'timeline' || 'memos' || 'marked') {
+              utils.js(deps.marked).then(function () {
+                utils.js(js, { defer: true });
+              });
+            } else {
+              utils.js(js, { defer: true });
+            }
+          });
+        }
+      }
+    }
+  });
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.search = {
+      path: `/search.json`,
+    }
+    utils.js('/js/search/local-search.js', { defer: true });
+  });
+</script><script>
+  window.FPConfig = {
+    delay: 0,
+    ignoreKeywords: [],
+    maxRPS: 5,
+    hoverDelay: 25
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.min.js"></script>
+<script>
+  // https://www.npmjs.com/package/vanilla-lazyload
+  // Set the options globally
+  // to make LazyLoad self-initialize
+  window.lazyLoadOptions = {
+    elements_selector: ".lazy",
+  };
+  // Listen to the initialization event
+  // and get the instance of LazyLoad
+  window.addEventListener(
+    "LazyLoad::Initialized",
+    function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    },
+    false
+  );
+  document.addEventListener('DOMContentLoaded', function () {
+    window.lazyLoadInstance?.update();
+  });
+</script><script>
+  ctx.fancybox = {
+    selector: `.timenode p>img`,
+    css: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css`,
+    js: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js`
+  };
+  var selector = '[data-fancybox]:not(.error)';
+  if (ctx.fancybox.selector) {
+    selector += `, ${ctx.fancybox.selector}`
+  }
+  var needFancybox = document.querySelectorAll(selector).length !== 0;
+  if (!needFancybox) {
+    const els = document.getElementsByClassName('ds-memos');
+    if (els != undefined && els.length > 0) {
+      needFancybox = true;
+    }
+  }
+  if (needFancybox) {
+    utils.css(ctx.fancybox.css);
+    utils.js(ctx.fancybox.js, { defer: true }).then(function () {
+      Fancybox.bind(selector, {
+        hideScrollbar: false,
+        Thumbs: {
+          autoStart: false,
+        },
+        caption: (fancybox, slide) => {
+          return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null
+        }
+      });
+    })
+  }
+</script>
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const swiper_api = document.getElementById('swiper-api');
+    if (swiper_api != undefined) {
+      utils.css(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css`);
+      utils.js(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js`, { defer: true }).then(function () {
+        const effect = swiper_api.getAttribute('effect') || '';
+        var swiper = new Swiper('.swiper#swiper-api', {
+          slidesPerView: 'auto',
+          spaceBetween: 8,
+          centeredSlides: true,
+          effect: effect,
+          rewind: true,
+          pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+          },
+          navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          },
+        });
+      })
+    }
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    window.codeElements = document.querySelectorAll('.code');
+    if (window.codeElements.length > 0) {
+      ctx.copycode = {
+        default_text: `Copy`,
+        success_text: `Copied`,
+        toast: `复制成功`,
+      };
+      utils.js('/js/plugins/copycode.js');
+    }
+  });
+</script>
+
+
+<!-- inject -->
+
+</div></body></html>

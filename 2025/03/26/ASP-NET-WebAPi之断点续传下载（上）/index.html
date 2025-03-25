@@ -1,0 +1,697 @@
+
+<!DOCTYPE html><html lang="zh-CH">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1" theme-name="Stellar" theme-version="1.29.1">
+  
+  <meta name="generator" content="Hexo 7.3.0">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  
+  <title>ASP.NET WebAPi之断点续传下载（上） - 无聊的橙子</title>
+
+  
+    <meta name="description" content="前言之前一直感觉断点续传比较神秘，于是想去一探究竟，不知从何入手，以为就写写逻辑就行，结果搜索一番，还得了解相关http协议知识，又花了许久功夫去看http协议中有关断点续传知识，有时候发觉东西只有当你用到再去看相关内容时才会掌握的更加牢固，理解的更加透彻吧，下面我们首先来补补关于http协议中断点续传的知识。 http协议知识恶补当请求一个html页面时我们会看到请求页面如下：  第一眼看到上面">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ASP.NET WebAPi之断点续传下载（上）">
+<meta property="og:url" content="http://xclikee.github.io/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%8A%EF%BC%89/index.html">
+<meta property="og:site_name" content="无聊的橙子">
+<meta property="og:description" content="前言之前一直感觉断点续传比较神秘，于是想去一探究竟，不知从何入手，以为就写写逻辑就行，结果搜索一番，还得了解相关http协议知识，又花了许久功夫去看http协议中有关断点续传知识，有时候发觉东西只有当你用到再去看相关内容时才会掌握的更加牢固，理解的更加透彻吧，下面我们首先来补补关于http协议中断点续传的知识。 http协议知识恶补当请求一个html页面时我们会看到请求页面如下：  第一眼看到上面">
+<meta property="og:locale" content="zh_CH">
+<meta property="og:image" content="http://xclikee.github.io/images/589642-20161115212343107-619733539.png">
+<meta property="og:image" content="http://xclikee.github.io/images/589642-20161117210205435-1683942517.png">
+<meta property="og:image" content="http://xclikee.github.io/images/589642-20161117211525904-667661465.png">
+<meta property="og:image" content="http://xclikee.github.io/images/589642-20161117232016654-314994774.gif">
+<meta property="article:published_time" content="2025-03-25T16:00:10.000Z">
+<meta property="article:modified_time" content="2025-03-25T16:03:11.635Z">
+<meta property="article:author" content="XCLIKEE">
+<meta property="article:tag" content="博客,xclikee,代码，记录">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://xclikee.github.io/images/589642-20161115212343107-619733539.png">
+  
+  
+  
+  <meta name="keywords" content="博客,xclikee,代码，记录">
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.29.1">
+
+  
+
+  
+
+  
+</head>
+<body>
+
+<div class="l_body s:aa content tech" id="start" layout="post" ><aside class="l_left"><div class="leftbar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="avatar" href="/about/"><div class="bg" style="opacity:0;background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp);"></div><img no-lazy class="avatar" src="/css/images/head.jpg" onerror="javascript:this.classList.add('error');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/2659360.svg';"></a><a class="title" href="/"><div class="main" ff="title">无聊的橙子</div><div class="sub normal cap">程序员</div><div class="sub hover cap" style="opacity:0"> 日常记录</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="Search"></form><div id="search-result"></div><div class="search-no-result">No Results!</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">Recent Update</span></div><div class="widget-body fs14"><a class="item title" href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%AD%EF%BC%89/"><span class="title">ASP.NET WebAPi之断点续传下载（中）</span></a><a class="item title" href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%8A%EF%BC%89/"><span class="title">ASP.NET WebAPi之断点续传下载（上）</span></a><a class="item title" href="/2025/03/24/mysql80%E6%93%8D%E4%BD%9C%E8%AE%B0%E5%BD%95/"><span class="title">mysql 8.0 操作记录</span></a><a class="item title" href="/2025/03/24/Unity%E5%AE%9E%E7%8E%B0UI%E7%9A%84%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E6%8B%96%E6%8B%BD%E6%8B%89%E4%BC%B8%E5%8A%9F%E8%83%BD/"><span class="title">Unity实现UI的边缘检测和拖拽拉伸功能</span></a><a class="item title" href="/2025/03/24/%E6%8C%89%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%B8%AD%E7%9A%84%E6%95%B0%E5%AD%97%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98/"><span class="title">c#按字符串中的数字排序问题</span></a><a class="item title" href="/2025/03/24/%E4%BF%AE%E5%A4%8DPlatformlO%E6%89%BE%E4%B8%8D%E5%88%B0%E8%BF%99%E6%A0%B7%E7%9A%84%E6%96%87%E4%BB%B6%E6%88%96%E8%80%85%E7%9B%AE%E5%BD%95/"><span class="title">修复 PlatformlO 找不到这样的文件或者目录</span></a><a class="item title" href="/2025/03/24/platformio-ide-build-%E9%94%99%E8%AF%AF/"><span class="title">platformio-ide.build 错误</span></a><a class="item title" href="/2025/03/24/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E9%9A%8F%E6%9C%BA%E8%8E%B7%E5%8F%96%E4%B8%80%E6%9D%A1%E6%88%96%E5%A4%9A%E6%9D%A1%E8%AE%B0%E5%BD%95/"><span class="title">MySQL数据库中随机获取一条或多条记录</span></a><a class="item title" href="/2025/03/24/%E5%A4%9A%E8%A1%A8%E8%81%94%E6%9F%A5%E6%9F%A5%E8%AF%A2%E7%BB%93%E6%9E%9C%E5%87%BA%E7%8E%B0%E9%87%8D%E5%A4%8D%E7%9A%84%E5%8E%9F%E5%9B%A0%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95/"><span class="title">Mysql多表联查，查询结果出现重复的原因和解决方法</span></a><a class="item title" href="/2025/03/24/%E6%A3%80%E6%B5%8B%E9%BC%A0%E6%A0%87%E6%89%80%E7%82%B9%E5%87%BB%E7%9A%84%E6%8C%89%E9%92%AE%E4%BD%8D%E7%BD%AE%E6%98%AF%E5%90%A6%E6%98%AF%E9%80%8F%E6%98%8E%E7%9A%84/"><span class="title">检测鼠标所点击的按钮位置是否是透明的</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">Home</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">Blog</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">Posted on: <time datetime="2025-03-25T16:00:10.000Z">2025-03-26</time></span><span class="sep updated"></span><span class="text updated">Updated on: <time datetime="2025-03-25T16:03:11.635Z">2025-03-26</time></span></div></div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>ASP.NET WebAPi之断点续传下载（上）</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>之前一直感觉断点续传比较神秘，于是想去一探究竟，不知从何入手，以为就写写逻辑就行，结果搜索一番，还得了解相关http协议知识，又花了许久功夫去看http协议中有关断点续传知识，有时候发觉东西只有当你用到再去看相关内容时才会掌握的更加牢固，理解的更加透彻吧，下面我们首先来补补关于http协议中断点续传的知识。</p>
+<h2 id="http协议知识恶补"><a href="#http协议知识恶补" class="headerlink" title="http协议知识恶补"></a>http协议知识恶补</h2><p>当请求一个html页面时我们会看到请求页面如下：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/589642-20161115212343107-619733539.png"></p>
+<p>第一眼看到上面Accept中的参数时我是懵逼的，之前也就看看缓存cookie等常见的头信息，于是借此机会也学习下这部分内容。</p>
+<p>我们知道Accept是指客户端允许请求返回的内容类型，那为何这里面参数有如此之多呢？在学习WebAPi时，我们在服务端未进行过滤时既可以返回xml，也可以返回json，此时如上图一样，text&#x2F;html未匹配上，接着匹配xml类型，匹配后则进行相应格式内容返回，所以客户端接受如此多类型内容，也是为了服务端那边未设置特定内容响应，此时则根据客户端设置的内容进行最合适的匹配。</p>
+<p>那么问题来了，上面的q是啥玩意？</p>
+<h3 id="q（quality）"><a href="#q（quality）" class="headerlink" title="q（quality）"></a>q（quality）</h3><p>上面给出了客户端能够接受响应的内容类型，自然就有最合适的匹配，此时就用到了q这个参数，在此我将q翻译为quality即权重的意思，应该是比较合适的，它用来表示我们期待接受内容偏爱的程度即所占的权重。它的范围是0-1，其默认值为1，这就类似质检部门对产品合格判断的一种介质。例如当我们需要返回视频资源时，我们客户端设置为如下：</p>
+<p><code>Accept: audio/\*; q=0.2, audio/basic</code></p>
+<p>此时我们将上述翻译如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">audio/basic; q=1</span><br><span class="line">audio/\*; q=0.2</span><br></pre></td></tr></table></figure>
+
+<p>我们更加期待返回的是audio&#x2F;basic类型的资源，因为其权重为1大于audio&#x2F;*类型的资源，若为匹配到则继续匹配下一个资源，audio&#x2F;*则表示属于audio类型的所有子类型资源。</p>
+<p>接下来，我们再来看一个例子：</p>
+<p><code>Accept: text/plain; q=0.5, text/html,text/x-dvi; q=0.8, text/x-c</code></p>
+<p>此时我们则可以翻译为如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Accept: </span><br><span class="line">text/html;q=1或者 text/x-c;q=1</span><br><span class="line">text/x-dvi; q=0.8</span><br><span class="line">text/plain; q=0.5</span><br></pre></td></tr></table></figure>
+<p>倾向于返回text&#x2F;html或者text&#x2F;x-c类型资源，若都不存在，则返回权重为0.8的text&#x2F;x-dvi，最终还是不存在则返回text&#x2F;plain。</p>
+<h3 id="Accept-Ranges"><a href="#Accept-Ranges" class="headerlink" title="Accept-Ranges"></a>Accept-Ranges</h3><p>在响应头中添加此字段允许服务端来显示表明对资源范围的接受。如果服务端接受一个字节范围的资源的请求则此时变成如下：</p>
+<p>Accept-Ranges: bytes</p>
+<p>如果服务端不接受任何范围的请求资源此时则在响应头添加如下来告诉客户端不要发送范围请求的资源：</p>
+<p>Accept-Ranges: none</p>
+<h3 id="Content-Range"><a href="#Content-Range" class="headerlink" title="Content-Range"></a>Content-Range</h3><p>当在响应头中添加接受字节范围的资源时，此时若客户端请求资源文件比较大时即只是返回部分数据时，此时则返回状态码为206的部分内容，在Content-Range响应头信息中实时显示当前数据的进度。比如如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">//开始500个字节数据</span><br><span class="line">Content-Range: bytes 0\-499/1234</span><br><span class="line"></span><br><span class="line">//第二个500个字节数据</span><br><span class="line">Content-Range: bytes 500\-999/1234</span><br><span class="line"></span><br><span class="line">//除了开始500个字节之外的数据</span><br><span class="line">Content-Range: bytes 500\-1233/1234</span><br><span class="line"></span><br><span class="line">//最后500个字节数据（表示数据最终传输完毕）</span><br><span class="line">Content-Range: bytes 734\-1233/1234</span><br></pre></td></tr></table></figure>
+
+
+<p>如果客户端请求资源到达所给资源的界限此时则返回416的状态码。</p>
+<p>注意：当请求资源为字节范围请求时，不要在响应头中使用 multipart&#x2F;byteranges 类型的content-type。 </p>
+<h2 id="断点续传场景"><a href="#断点续传场景" class="headerlink" title="断点续传场景"></a>断点续传场景</h2><p>当正在下载时出于其他任何原因此时下载中断，那么下载用户只能重新下载，这样的体验想必是比较痛苦的，最烦躁的是如果用户是在移动端下载大文件时，居然下载中断了，接下来又得重新下载，此时想必用户会放弃下载。此时断点续传则应运而生。 断点续传则需要用到上述Accept-Ranges和Content-Range将其添加到响应头中。例如如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">HEAD http://localhost/api/files/get?filename=blog\_backup.zip </span><br><span class="line">User-Agent: IIS</span><br><span class="line">Host: localhost</span><br><span class="line"></span><br><span class="line">HTTP/1.1 200 OK  </span><br><span class="line">Content\-Length: 1182367743  </span><br><span class="line">Content\-Type: application/octet-stream  </span><br><span class="line">Accept\-Ranges: bytes  </span><br><span class="line">Server: Microsoft\-IIS/10.0  </span><br><span class="line">Content\-Disposition: attachment; filename=blog\_backup.zip</span><br></pre></td></tr></table></figure>
+
+
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">HEAD http://localhost/api/files/get?filename=blog\_backup.zip   </span><br><span class="line">User-Agent: IIS</span><br><span class="line">Host: localhost  </span><br><span class="line">Range: bytes\=0\-999</span><br><span class="line"></span><br><span class="line">HTTP/1.1 206 Partial Content  </span><br><span class="line">Content\-Length: 1000  </span><br><span class="line">Content\-Type: application/octet-stream  </span><br><span class="line">Content\-Range: bytes 0\-999/1182367743  </span><br><span class="line">Accept\-Ranges: bytes  </span><br><span class="line">Server: Microsoft\-IIS/10.0  </span><br><span class="line">Content\-Disposition: attachment; filename=blog\_backup.zip</span><br></pre></td></tr></table></figure>
+
+
+<p>接下来我们来实现简单的下载以及断点续传下载对比看看效果。 </p>
+<p>在webapi中提供了一系列方便我们调用的api，比如 ContentDispositionHeaderValue 来设置附件而不像在webform中手动在响应头中进行拼接。以及返回的MimeType类型 MediaTypeHeaderValue 。首先我们看看最普通的下载。</p>
+<h3 id="普通下载"><a href="#普通下载" class="headerlink" title="普通下载"></a>普通下载</h3><p>普通的下载无非就是获取到文件的标识再打开下载的文件夹，最后得到文件流返回到响应的HttpContent对象中以及设置附件即可。我们看看如下代码还是比较简单的，这种相对比较简单的下载想必我们大家定是信手拈来。</p>
+<pre><code>    //响应的MimeType类型
+    private const string MimeType = &quot;application/octet-stream&quot;;
+    
+    //配置文件中配置的文件所在路径
+    private const string AppSettingDirPath = &quot;DownloadDir&quot;;
+
+   //将配置文件中取得的路径赋给此变量
+    private readonly string DirFilePath;
+
+    this.DirFilePath = ConfigurationManager.AppSettings\[AppSettingDirPath\];
+</code></pre>
+<p>接下来就是最重要的下载逻辑了，如下：</p>
+<pre><code>    public HttpResponseMessage Download(string fileName)
+    &#123;
+        var fullFilePath = Path.Combine(this.DirFilePath, fileName);
+
+        if (!File.Exists(fullFilePath))
+        &#123;
+            throw new HttpResponseException(HttpStatusCode.NotFound);
+        &#125;
+
+        FileStream fileStream \= File.Open(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+        var response = new HttpResponseMessage();
+
+        response.Content \= new StreamContent(fileStream);
+
+        response.Content.Headers.ContentDisposition
+            \= new ContentDispositionHeaderValue(&quot;attachment&quot;) &#123; FileName = fileName &#125;;
+
+        response.Content.Headers.ContentType
+            \= new MediaTypeHeaderValue(MimeType);
+
+        response.Content.Headers.ContentLength
+            \= fileStream.Length;
+
+        return response;
+    &#125;
+</code></pre>
+<p>那么问题来了，我们可不可以在获取文件流返回到HttpContent之前是不是应该首先将文件流放入到缓冲流中然后再返回呢？如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">var bufferStream = new BufferedStream(fileStream);</span><br><span class="line">response.Content \= new StreamContent(bufferStream);</span><br></pre></td></tr></table></figure>
+
+<p>我们想着是不是将文件流率先放入到缓冲流中效果是否更佳呢？刚开始我也是这样想来着，但是经过查证资料发现:</p>
+<blockquote>
+<p>为了得到更好的性能，在文件流中已经包含有缓冲流的缓冲逻辑，对于用缓冲流来包裹文件流的情况没有任何好处，还有一点就是在.NET Framework中没有任何一个流需要用到缓冲流，但是，但是有一种情况除外则是若我们自定义实现流且默认没有实现缓冲的逻辑情况下需要用到缓冲流，资料来源于：<a target="_blank" rel="noopener" href="https://blogs.msdn.microsoft.com/brada/2004/04/15/filestream-and-bufferedstream/">Filestream and BufferedStream</a></p>
+</blockquote>
+<p>上述也算是涨知识了。继续回到我们的话题，此时我们下载一个文件则看到如下图所示：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/589642-20161117210205435-1683942517.png"> </p>
+<p>因为未实现断点续传，此时我们通过右键可以看到无法暂停，如下：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/589642-20161117211525904-667661465.png"></p>
+<p>我们继续往下走，接下来来实现断点续传看看：</p>
+<h3 id="断点续传下载"><a href="#断点续传下载" class="headerlink" title="断点续传下载"></a>断点续传下载</h3><p>在WebAPi提供了Range属性其返回对象为 RangeHeaderValue 里面有存在每个范围的集合如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">// 摘要: </span><br><span class="line">//     Gets the ranges specified from the System.Net.Http.Headers.RangeHeaderValue</span><br><span class="line">//     object.</span><br><span class="line">//</span><br><span class="line">// 返回结果: </span><br><span class="line">//     Returns System.Collections.Generic.ICollection&lt;T&gt;.The ranges from the System.Net.Http.Headers.RangeHeaderValue</span><br><span class="line">//     object.</span><br><span class="line">public ICollection&lt;RangeItemHeaderValue&gt; Ranges &#123; get; &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这是为利用多线程下载而提供，这里我们仅仅实现一个范围的下载。我们通过判断这个对象的值是否为null来实现断点续传。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">if (Request.Headers.Range == null || </span><br><span class="line">    Request.Headers.Range.Ranges.Count \== 0 || </span><br><span class="line">    Request.Headers.Range.Ranges.FirstOrDefault().From.Value \== 0)</span><br><span class="line">&#123;</span><br><span class="line">    var sourceStream = File.Open(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);</span><br><span class="line"></span><br><span class="line">    response \= new HttpResponseMessage(HttpStatusCode.OK);</span><br><span class="line">    response.Content \= new StreamContent(sourceStream);</span><br><span class="line">    response.Headers.AcceptRanges.Add(&quot;bytes&quot;);//告诉客户端接受资源为字节</span><br><span class="line">    response.Content.Headers.ContentLength \= sourceStream.Length;</span><br><span class="line">    response.Content.Headers.ContentType \= new MediaTypeHeaderValue(MimeType);</span><br><span class="line">    response.Content.Headers.ContentDisposition \= new ContentDispositionHeaderValue(&quot;attachment&quot;)</span><br><span class="line">    &#123;</span><br><span class="line">        FileName \= fileName</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>获取当前已经下载字节数，接着继续进行剩下字节下载。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">else</span><br><span class="line">&#123;</span><br><span class="line">    var item = Request.Headers.Range.Ranges.FirstOrDefault();</span><br><span class="line">    if (item != null &amp;&amp; item.From.HasValue)</span><br><span class="line">    &#123;</span><br><span class="line">        response \= this.GetPartialContent(fileName, item.From.Value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>剩余字节数下载</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">private HttpResponseMessage GetPartialContent(string fileName, long partial)</span><br><span class="line">&#123;</span><br><span class="line">    var response = new HttpResponseMessage();</span><br><span class="line">    var fullFilePath = Path.Combine(this.DirFilePath, fileName);</span><br><span class="line">    FileInfo fileInfo \= new FileInfo(fullFilePath);</span><br><span class="line">    long startByte = partial;</span><br><span class="line">    var memoryStream = new MemoryStream();</span><br><span class="line">    var buffer = new byte\[65536\];</span><br><span class="line">    using (var fileStream = File.Open(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))</span><br><span class="line">    &#123;</span><br><span class="line">        var bytesRead = 0;</span><br><span class="line">        fileStream.Seek(startByte, SeekOrigin.Begin);</span><br><span class="line">        int length = Convert.ToInt32((fileInfo.Length - 1) - startByte) + 1;</span><br><span class="line"></span><br><span class="line">        while (length &gt; 0 &amp;&amp; bytesRead &gt; 0)</span><br><span class="line">        &#123;</span><br><span class="line">            bytesRead \= fileStream.Read(buffer, 0, Math.Min(length, buffer.Length));</span><br><span class="line">            memoryStream.Write(buffer, 0, bytesRead);</span><br><span class="line">            length \-= bytesRead;</span><br><span class="line">        &#125;</span><br><span class="line">        response.Content \= new StreamContent(memoryStream); </span><br><span class="line">    &#125;</span><br><span class="line">    response.Headers.AcceptRanges.Add(&quot;bytes&quot;);</span><br><span class="line">    response.StatusCode \= HttpStatusCode.PartialContent;</span><br><span class="line">    response.Content.Headers.ContentType \= new MediaTypeHeaderValue(MimeType);</span><br><span class="line">    response.Content.Headers.ContentLength \= File.Open(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.Read).Length;</span><br><span class="line">    response.Content.Headers.ContentDisposition \= new ContentDispositionHeaderValue(&quot;attachment&quot;)</span><br><span class="line">    &#123;</span><br><span class="line">        FileName \= fileName</span><br><span class="line">    &#125;;</span><br><span class="line">    return response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>接下来我们看看演示结果：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/images/589642-20161117232016654-314994774.gif"></p>
+<p>从上面演示我们看出目前已经实现了断点续传，浏览器下载管理器出现了暂停的按钮，但是当暂停后无法继续进行后续下载，在这里存在问题，我们下节再进行后续讲解。同时当返回HttpContent发现居然还有一个可以返回的HttpContent即 PushStreamContent ，此时我们可以将剩余部分字节下载进行如下修改：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">  Action&lt;Stream, HttpContent, TransportContext&gt; pushContentAction = (outputStream, content, context) =&gt;</span><br><span class="line">  &#123;</span><br><span class="line">      try</span><br><span class="line">      &#123;</span><br><span class="line">          var buffer = new byte\[65536\];</span><br><span class="line">          using (var fileStream = File.Open(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))</span><br><span class="line">          &#123;</span><br><span class="line">              var bytesRead = 0;</span><br><span class="line">              fileStream.Seek(startByte, SeekOrigin.Begin);</span><br><span class="line">              int length = Convert.ToInt32((fileInfo.Length - 1) - startByte) + 1;</span><br><span class="line"></span><br><span class="line">              while (length &gt; 0 &amp;&amp; bytesRead &gt; 0)</span><br><span class="line">              &#123;</span><br><span class="line">                  bytesRead \= fileStream.Read(buffer, 0, Math.Min(length, buffer.Length));</span><br><span class="line">                  outputStream.Write(buffer, 0, bytesRead);</span><br><span class="line">                  length \-= bytesRead;</span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">          &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      catch (HttpException ex)</span><br><span class="line">      &#123;</span><br><span class="line">          throw ex;</span><br><span class="line">      &#125;</span><br><span class="line">      finally</span><br><span class="line">      &#123;</span><br><span class="line">          outputStream.Close();</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">response.Content \= new PushStreamContent(pushContentAction, new MediaTypeHeaderValue(MimeType));</span><br><span class="line">  response.StatusCode \= HttpStatusCode.PartialContent;</span><br><span class="line">  response.Headers.AcceptRanges.Add(&quot;bytes&quot;);</span><br><span class="line">  response.Content.Headers.ContentType \= new MediaTypeHeaderValue(MimeType);</span><br><span class="line">  response.Content.Headers.ContentLength \= File.Open(fullFilePath, FileMode.Open, FileAccess.Read, FileShare.Read).Length;</span><br><span class="line">  response.Content.Headers.ContentDisposition \= new ContentDispositionHeaderValue(&quot;attachment&quot;)</span><br><span class="line">  &#123;</span><br><span class="line">      FileName \= fileName</span><br><span class="line">  &#125;;</span><br><span class="line">  return response;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>如上所做也可行，返回StreamContent不就ok了吗，为何还出现一个PushStreamContent呢？这又是一个遗留问题！</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本节我们讲述了在webapi中普通下载以及断点续传下载，对于断点续传下载当暂停后无法继续进行下载，暂时还存在一定问题，对于返回的内容既可以为StreamContent，也可以是PushStreamContent，这二者有何区别呢？二者的应用场景是什么呢？这又是一个问题，关于此二者我们下节再讲，webapi一个很轻量的服务框架，你值得拥有，see u。</p>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/CreateMyself/p/6063646.html">https://www.cnblogs.com/CreateMyself/p/6063646.html</a>，如有侵权，请联系删除。</p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>License</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"><div class="note">Newer</div><a href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%AD%EF%BC%89/">ASP.NET WebAPi之断点续传下载（中）</a></div><div class="item" id="next"><div class="note">Older</div><a href="/2025/03/24/Unity%E5%AE%9E%E7%8E%B0UI%E7%9A%84%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E6%8B%96%E6%8B%BD%E6%8B%89%E4%BC%B8%E5%8A%9F%E8%83%BD/">Unity实现UI的边缘检测和拖拽拉伸功能</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>本站由 <a href="/">XCLIKEE</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1">Stellar 1.29.1</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+<div class="main-mask" onclick="sidebar.dismiss()"></div></div><aside class="l_right">
+<div class="widgets">
+
+
+
+<widget class="widget-wrapper toc" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">On This Page</span><a class="cap-action" onclick="sidebar.toggleTOC()" ><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></a></div><div class="widget-body"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-text">前言</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#http%E5%8D%8F%E8%AE%AE%E7%9F%A5%E8%AF%86%E6%81%B6%E8%A1%A5"><span class="toc-text">http协议知识恶补</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#q%EF%BC%88quality%EF%BC%89"><span class="toc-text">q（quality）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Accept-Ranges"><span class="toc-text">Accept-Ranges</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Content-Range"><span class="toc-text">Content-Range</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E5%9C%BA%E6%99%AF"><span class="toc-text">断点续传场景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%99%AE%E9%80%9A%E4%B8%8B%E8%BD%BD"><span class="toc-text">普通下载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD"><span class="toc-text">断点续传下载</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-text">总结</span></a></li></ol></li></ol></div><div class="widget-footer">
+
+<a class="top" onclick="util.scrollTop()"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.535 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 15.5l3-3l3 3m-6-4l3-3l3 3"/></g></svg><span>Scroll to Top</span></a></div></widget>
+</div></aside><div class='float-panel blur'>
+  <button type='button' style='display:none' class='laptop-only rightbar-toggle mobile' onclick='sidebar.rightbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button type='button' style='display:none' class='mobile-only leftbar-toggle mobile' onclick='sidebar.leftbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+</div><div class="scripts">
+<script type="text/javascript">
+  const ctx = {
+    date_suffix: {
+      just: `Just`,
+      min: `minutes ago`,
+      hour: `hours ago`,
+      day: `days ago`,
+    },
+    root : `/`,
+  };
+
+  // required plugins (only load if needs)
+  if (`local_search`) {
+    ctx.search = {};
+    ctx.search.service = `local_search`;
+    if (ctx.search.service == 'local_search') {
+      let service_obj = Object.assign({}, `{"field":"all","path":"/search.json","content":true,"sort":"-date"}`);
+      ctx.search[ctx.search.service] = service_obj;
+    }
+  }
+  const def = {
+    avatar: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg`,
+    cover: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/cover/76b86c0226ffd.svg`,
+  };
+  const deps = {
+    jquery: `https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js`,
+    marked: `https://cdn.jsdelivr.net/npm/marked@13.0.1/lib/marked.umd.min.js`
+  }
+  
+
+</script>
+
+<script type="text/javascript">
+  const utils = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    css: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    js: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = ctx.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    jq: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        utils.js(deps.jquery).then(fn)
+      } else {
+        fn()
+      }
+    },
+    
+    onLoading: (el) => {
+      if (el) {
+        $(el).append('<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+      }
+    },
+    onLoadSuccess: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap').remove();
+      }
+    },
+    onLoadFailure: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap svg').remove();
+        $(el).find('.loading-wrap').append('<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+        $(el).find('.loading-wrap').addClass('error');
+      }
+    },
+    request: (el, url, callback, onFailure) => {
+      let retryTimes = 3;
+      utils.onLoading(el);
+      function req() {
+        return new Promise((resolve, reject) => {
+          let status = 0; // 0 等待 1 完成 2 超时
+          let timer = setTimeout(() => {
+            if (status === 0) {
+              status = 2;
+              timer = null;
+              reject('请求超时');
+              if (retryTimes == 0) {
+                onFailure();
+              }
+            }
+          }, 5000);
+          fetch(url).then(function(response) {
+            if (status !== 2) {
+              clearTimeout(timer);
+              resolve(response);
+              timer = null;
+              status = 1;
+            }
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Network response was not ok.');
+          }).then(function(data) {
+            retryTimes = 0;
+            utils.onLoadSuccess(el);
+            callback(data);
+          }).catch(function(error) {
+            if (retryTimes > 0) {
+              retryTimes -= 1;
+              setTimeout(() => {
+                req();
+              }, 5000);
+            } else {
+              utils.onLoadFailure(el);
+              onFailure();
+            }
+          });
+        });
+      }
+      req();
+    },
+  };
+</script>
+
+<script>
+  const sidebar = {
+    leftbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    rightbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('rightbar');
+        l_body.removeAttribute('leftbar');
+      }
+    },
+    dismiss: () => {
+      if (l_body) {
+        l_body.removeAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    toggleTOC: () => {
+      document.querySelector('#data-toc').classList.toggle('collapse');
+    }
+  }
+</script>
+<script type="text/javascript">
+  (() => {
+    const tagSwitchers = document.querySelectorAll('.tag-subtree.parent-tag > a > .tag-switcher-wrapper')
+    for (const tagSwitcher of tagSwitchers) {
+      tagSwitcher.addEventListener('click', (e) => {
+        const parent = e.target.closest('.tag-subtree.parent-tag')
+        parent.classList.toggle('expanded')
+        e.preventDefault()
+      })
+    }
+
+    // Get active tag from query string, then activate it.
+    const urlParams = new URLSearchParams(window.location.search)
+    const activeTag = urlParams.get('tag')
+    if (activeTag) {
+      let tag = document.querySelector(`.tag-subtree[data-tag="${activeTag}"]`)
+      if (tag) {
+        tag.querySelector('a').classList.add('active')
+        
+        while (tag) {
+          tag.classList.add('expanded')
+          tag = tag.parentElement.closest('.tag-subtree.parent-tag')
+        }
+      }
+    }
+  })()
+</script>
+
+
+<!-- required -->
+<script src="/js/main.js?v=1.29.1" defer></script>
+
+<script type="text/javascript">
+  const applyTheme = (theme) => {
+    if (theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+
+    applyThemeToGiscus(theme)
+  }
+
+  const applyThemeToGiscus = (theme) => {
+    theme = theme === 'auto' ? 'preferred_color_scheme' : theme
+
+    const cmt = document.getElementById('giscus')
+    if (cmt) {
+      // This works before giscus load.
+      cmt.setAttribute('data-theme', theme)
+    }
+
+    const iframe = document.querySelector('#comments > section.giscus > iframe')
+    if (iframe) {
+      // This works after giscus loaded.
+      const src = iframe.src
+      const newSrc = src.replace(/theme=[\w]+/, `theme=${theme}`)
+      iframe.src = newSrc
+    }
+  }
+
+  const switchTheme = () => {
+    // light -> dark -> auto -> light -> ...
+    const currentTheme = document.documentElement.getAttribute('data-theme')
+    let newTheme;
+    switch (currentTheme) {
+      case 'light':
+        newTheme = 'dark'
+        break
+      case 'dark':
+        newTheme = 'auto'
+        break
+      default:
+        newTheme = 'light'
+    }
+    applyTheme(newTheme)
+    window.localStorage.setItem('Stellar.theme', newTheme)
+
+    const messages = {
+      light: `Switched to Light Mode`,
+      dark: `Switched to Dark Mode`,
+      auto: `Switched to Auto Mode`,
+    }
+    hud?.toast?.(messages[newTheme])
+  }
+
+  (() => {
+    // Apply user's preferred theme, if any.
+    const theme = window.localStorage.getItem('Stellar.theme')
+    if (theme !== null) {
+      applyTheme(theme)
+    }
+  })()
+</script>
+
+
+<!-- optional -->
+
+
+
+<script defer>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.services = Object.assign({}, JSON.parse(`{"mdrender":{"js":"/js/services/mdrender.js"},"siteinfo":{"js":"/js/services/siteinfo.js","api":null},"ghinfo":{"js":"/js/services/ghinfo.js"},"sites":{"js":"/js/services/sites.js"},"friends":{"js":"/js/services/friends.js"},"timeline":{"js":"/js/services/timeline.js"},"fcircle":{"js":"/js/services/fcircle.js"},"weibo":{"js":"/js/services/weibo.js"},"memos":{"js":"/js/services/memos.js"}}`));
+    for (let id of Object.keys(ctx.services)) {
+      const js = ctx.services[id].js;
+      if (id == 'siteinfo') {
+        ctx.cardlinks = document.querySelectorAll('a.link-card[cardlink]');
+        if (ctx.cardlinks?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            setCardLink(ctx.cardlinks);
+          });
+        }
+      } else {
+        const els = document.getElementsByClassName(`ds-${id}`);
+        if (els?.length > 0) {
+          utils.jq(() => {
+            if (id == 'timeline' || 'memos' || 'marked') {
+              utils.js(deps.marked).then(function () {
+                utils.js(js, { defer: true });
+              });
+            } else {
+              utils.js(js, { defer: true });
+            }
+          });
+        }
+      }
+    }
+  });
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.search = {
+      path: `/search.json`,
+    }
+    utils.js('/js/search/local-search.js', { defer: true });
+  });
+</script><script>
+  window.FPConfig = {
+    delay: 0,
+    ignoreKeywords: [],
+    maxRPS: 5,
+    hoverDelay: 25
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.min.js"></script>
+<script>
+  // https://www.npmjs.com/package/vanilla-lazyload
+  // Set the options globally
+  // to make LazyLoad self-initialize
+  window.lazyLoadOptions = {
+    elements_selector: ".lazy",
+  };
+  // Listen to the initialization event
+  // and get the instance of LazyLoad
+  window.addEventListener(
+    "LazyLoad::Initialized",
+    function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    },
+    false
+  );
+  document.addEventListener('DOMContentLoaded', function () {
+    window.lazyLoadInstance?.update();
+  });
+</script><script>
+  ctx.fancybox = {
+    selector: `.timenode p>img`,
+    css: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css`,
+    js: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js`
+  };
+  var selector = '[data-fancybox]:not(.error)';
+  if (ctx.fancybox.selector) {
+    selector += `, ${ctx.fancybox.selector}`
+  }
+  var needFancybox = document.querySelectorAll(selector).length !== 0;
+  if (!needFancybox) {
+    const els = document.getElementsByClassName('ds-memos');
+    if (els != undefined && els.length > 0) {
+      needFancybox = true;
+    }
+  }
+  if (needFancybox) {
+    utils.css(ctx.fancybox.css);
+    utils.js(ctx.fancybox.js, { defer: true }).then(function () {
+      Fancybox.bind(selector, {
+        hideScrollbar: false,
+        Thumbs: {
+          autoStart: false,
+        },
+        caption: (fancybox, slide) => {
+          return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null
+        }
+      });
+    })
+  }
+</script>
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const swiper_api = document.getElementById('swiper-api');
+    if (swiper_api != undefined) {
+      utils.css(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css`);
+      utils.js(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js`, { defer: true }).then(function () {
+        const effect = swiper_api.getAttribute('effect') || '';
+        var swiper = new Swiper('.swiper#swiper-api', {
+          slidesPerView: 'auto',
+          spaceBetween: 8,
+          centeredSlides: true,
+          effect: effect,
+          rewind: true,
+          pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+          },
+          navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          },
+        });
+      })
+    }
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    window.codeElements = document.querySelectorAll('.code');
+    if (window.codeElements.length > 0) {
+      ctx.copycode = {
+        default_text: `Copy`,
+        success_text: `Copied`,
+        toast: `复制成功`,
+      };
+      utils.js('/js/plugins/copycode.js');
+    }
+  });
+</script>
+
+
+<!-- inject -->
+
+</div></body></html>
