@@ -1,0 +1,661 @@
+
+<!DOCTYPE html><html lang="zh-CH">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/1.29.1" theme-name="Stellar" theme-version="1.29.1">
+  
+  <meta name="generator" content="Hexo 7.3.0">
+  <meta http-equiv='x-dns-prefetch-control' content='on' />
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True" >
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  
+  <title>Android HID设备（键盘、遥控等）功能实现流程及键值映射关系 - 无聊的橙子</title>
+
+  
+    <meta name="description" content="本文由 简悦 SimpRead 转码， 原文地址 blog.csdn.net  　HID（Human Interface Device，人机接口设备）是 USB 设备中常用的设备类型，是直接与人交互的 USB 设备，例如键盘、遥控器、鼠标与游戏杆等。在 USB 设备中，HID 设备的成本较低。     之前文章 android 键盘（遥控）键值定义大全 中整理了 android 中各种功能键值定">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android HID设备（键盘、遥控等）功能实现流程及键值映射关系">
+<meta property="og:url" content="http://xclikee.github.io/2025/03/24/simpread-Android%20HID%20%E8%AE%BE%E5%A4%87%EF%BC%88%E9%94%AE%E7%9B%98%E3%80%81%E9%81%A5%E6%8E%A7%E7%AD%89%EF%BC%89%E5%8A%9F%E8%83%BD%E5%AE%9E%E7%8E%B0%E6%B5%81%E7%A8%8B%E5%8F%8A%E9%94%AE%E5%80%BC%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB%20-%20CSDN%20%E5%8D%9A%E5%AE%A2/index.html">
+<meta property="og:site_name" content="无聊的橙子">
+<meta property="og:description" content="本文由 简悦 SimpRead 转码， 原文地址 blog.csdn.net  　HID（Human Interface Device，人机接口设备）是 USB 设备中常用的设备类型，是直接与人交互的 USB 设备，例如键盘、遥控器、鼠标与游戏杆等。在 USB 设备中，HID 设备的成本较低。     之前文章 android 键盘（遥控）键值定义大全 中整理了 android 中各种功能键值定">
+<meta property="og:locale" content="zh_CH">
+<meta property="og:image" content="https://i-blog.csdnimg.cn/blog_migrate/af6166bb6b098a030f93f74576324abb.jpeg">
+<meta property="article:published_time" content="2025-03-24T15:08:56.000Z">
+<meta property="article:modified_time" content="2025-06-21T05:13:11.619Z">
+<meta property="article:author" content="XCLIKEE">
+<meta property="article:tag" content="HID">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i-blog.csdnimg.cn/blog_migrate/af6166bb6b098a030f93f74576324abb.jpeg">
+  
+  
+  
+  <meta name="keywords" content="HID">
+
+  <!-- feed -->
+  
+
+  <link rel="stylesheet" href="/css/main.css?v=1.29.1">
+
+  
+
+  
+
+  
+</head>
+<body>
+
+<div class="l_body s:aa content tech" id="start" layout="post" ><aside class="l_left"><div class="leftbar-container">
+
+
+<header class="header"><div class="logo-wrap"><a class="avatar" href="/about/"><div class="bg" style="opacity:0;background-image:url(https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/rainbow64@3x.webp);"></div><img no-lazy class="avatar" src="/css/images/head.jpg" onerror="javascript:this.classList.add('error');this.src='https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/image/2659360.svg';"></a><a class="title" href="/"><div class="main" ff="title">无聊的橙子</div><div class="sub normal cap">程序员</div><div class="sub hover cap" style="opacity:0"> 日常记录</div></a></div></header>
+
+<div class="nav-area">
+<div class="search-wrapper" id="search-wrapper"><form class="search-form"><a class="search-button" onclick="document.getElementById(&quot;search-input&quot;).focus();"><svg t="1705074644177" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1560" width="200" height="200"><path d="M1008.839137 935.96571L792.364903 719.491476a56.783488 56.783488 0 0 0-80.152866 0 358.53545 358.53545 0 1 1 100.857314-335.166073 362.840335 362.840335 0 0 1-3.689902 170.145468 51.248635 51.248635 0 1 0 99.217358 26.444296 462.057693 462.057693 0 1 0-158.255785 242.303546l185.930047 185.725053a51.248635 51.248635 0 0 0 72.568068 0 51.248635 51.248635 0 0 0 0-72.978056z" p-id="1561"></path><path d="M616.479587 615.969233a50.428657 50.428657 0 0 0-61.498362-5.534852 174.655348 174.655348 0 0 1-177.525271 3.484907 49.403684 49.403684 0 0 0-58.833433 6.76482l-3.074918 2.869923a49.403684 49.403684 0 0 0 8.609771 78.10292 277.767601 277.767601 0 0 0 286.992355-5.739847 49.403684 49.403684 0 0 0 8.404776-76.667958z" p-id="1562"></path></svg></a><input type="text" class="search-input" id="search-input" placeholder="Search"></form><div id="search-result"></div><div class="search-no-result">No Results!</div></div>
+
+
+<nav class="menu dis-select"></nav>
+</div>
+<div class="widgets">
+
+
+<widget class="widget-wrapper post-list"><div class="widget-header dis-select"><span class="name">Recent Update</span></div><div class="widget-body fs14"><a class="item title" href="/2026/02/01/Platform%20IO%E5%BC%80%E5%8F%91ESP32%20C3%20%E9%85%8D%E7%BD%AE%E4%B8%B2%E5%8F%A3/"><span class="title">Platform IO开发ESP32 C3 配置串口</span></a><a class="item title" href="/2025/03/24/simpread-Android%20HID%20%E8%AE%BE%E5%A4%87%EF%BC%88%E9%94%AE%E7%9B%98%E3%80%81%E9%81%A5%E6%8E%A7%E7%AD%89%EF%BC%89%E5%8A%9F%E8%83%BD%E5%AE%9E%E7%8E%B0%E6%B5%81%E7%A8%8B%E5%8F%8A%E9%94%AE%E5%80%BC%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB%20-%20CSDN%20%E5%8D%9A%E5%AE%A2/"><span class="title">Android HID设备（键盘、遥控等）功能实现流程及键值映射关系</span></a><a class="item title" href="/2025/05/17/%E5%86%85%E7%BD%91%E7%A9%BF%E9%80%8F%E8%BF%9E%E6%8E%A5%E8%BF%9C%E7%A8%8B%E6%A1%8C%E9%9D%A2/"><span class="title">内网穿透连接远程桌面</span></a><a class="item title" href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%AD%EF%BC%89/"><span class="title">ASP.NET WebAPi之断点续传下载（中）</span></a><a class="item title" href="/2025/03/26/ASP-NET-WebAPi%E4%B9%8B%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E4%B8%8B%E8%BD%BD%EF%BC%88%E4%B8%8A%EF%BC%89/"><span class="title">ASP.NET WebAPi之断点续传下载（上）</span></a><a class="item title" href="/2025/03/24/mysql80%E6%93%8D%E4%BD%9C%E8%AE%B0%E5%BD%95/"><span class="title">mysql 8.0 操作记录</span></a><a class="item title" href="/2025/03/24/Unity%E5%AE%9E%E7%8E%B0UI%E7%9A%84%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E6%8B%96%E6%8B%BD%E6%8B%89%E4%BC%B8%E5%8A%9F%E8%83%BD/"><span class="title">Unity实现UI的边缘检测和拖拽拉伸功能</span></a><a class="item title" href="/2025/03/24/%E6%8C%89%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%B8%AD%E7%9A%84%E6%95%B0%E5%AD%97%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98/"><span class="title">c#按字符串中的数字排序问题</span></a><a class="item title" href="/2025/03/24/%E4%BF%AE%E5%A4%8DPlatformlO%E6%89%BE%E4%B8%8D%E5%88%B0%E8%BF%99%E6%A0%B7%E7%9A%84%E6%96%87%E4%BB%B6%E6%88%96%E8%80%85%E7%9B%AE%E5%BD%95/"><span class="title">修复 PlatformlO 找不到这样的文件或者目录</span></a><a class="item title" href="/2025/03/24/platformio-ide-build-%E9%94%99%E8%AF%AF/"><span class="title">platformio-ide.build 错误</span></a></div></widget>
+</div>
+
+</div></aside><div class="l_main" id="main">
+
+
+
+
+
+<div class="article banner top">
+  <div class="content">
+    <div class="top bread-nav footnote"><div class="left"><div class="flex-row" id="breadcrumb"><a class="cap breadcrumb" href="/">Home</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">Blog</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/HID/">HID</a></div>
+<div class="flex-row" id="post-meta"><span class="text created">Posted on: <time datetime="2025-03-24T15:08:56.000Z">2025-03-24</time></span><span class="sep updated"></span><span class="text updated">Updated on: <time datetime="2025-06-21T05:13:11.619Z">2025-06-21</time></span></div></div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>Android HID设备（键盘、遥控等）功能实现流程及键值映射关系</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div><article class="md-text content"><blockquote>
+<p>本文由 <a target="_blank" rel="noopener" href="http://ksria.com/simpread/">简悦 SimpRead</a> 转码， 原文地址 <a target="_blank" rel="noopener" href="https://blog.csdn.net/HuanWen_Cheng/article/details/132752354">blog.csdn.net</a></p>
+</blockquote>
+<p>　<strong>HID</strong>（Human Interface Device，人机接口设备）是 USB 设备中常用的<a target="_blank" rel="noopener" href="https://www.usbzh.com/article/detail-273.html" title="设备类型">设备类型</a>，是直接与人交互的 USB 设备，例如键盘、<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E9%81%A5%E6%8E%A7%E5%99%A8&spm=1001.2101.3001.7020">遥控器</a>、鼠标与游戏杆等。在 USB 设备中，HID 设备的成本较低。</p>
+<p>    之前文章 <a target="_blank" rel="noopener" href="https://mp.csdn.net/mp_blog/creation/editor/117788161" title=" android 键盘（遥控）键值定义大全">android 键盘（遥控）键值定义大全</a> 中整理了 <a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=android&spm=1001.2101.3001.7020">android</a> 中各种功能键值定义，那么从键盘按键到安卓设备控制生效的流程是怎样的呢？</p>
+<p><strong>Android 设备上的键盘操作实现流程：</strong></p>
+<ol>
+<li><p><code>EventHub</code> 从 <code>evdev</code> 驱动程序中读取原始事件，并使用键盘的按键布局映射将 Linux 按键代码（有时也称扫描代码）映射到 Android 按键代码中。</p>
+</li>
+<li><p><code>InputReader</code> 将消费原始事件，并更新元键状态。例如，如果您按下或释放左 Shift 键，该读取器就会相应地设置或重置 <code>META_SHIFT_LEFT_ON</code> 和 <code>META_SHIFT_ON</code> 位。</p>
+</li>
+<li><p><code>InputReader</code> 会向 <code>InputDispatcher</code> 发送按键事件的相关通知。</p>
+</li>
+<li><p><code>InputDispatcher</code> 通过调用 <code>WindowManagerPolicy.interceptKeyBeforeQueueing</code> 询问 <code>WindowManagerPolicy</code> 如何处理按键事件。该方法（负责在按下某些按键时唤醒设备）属于关键路径的一部分。实际上，<code>EventHub</code> 会在此关键路径上一直持有唤醒锁，从而确保它运行至结束。</p>
+</li>
+<li><p>如果目前正在使用 <code>InputFilter</code>，那么 <code>InputDispatcher</code> 将给予它机会消费或转换按键。<code>InputFilter</code> 可用于实现低级别的全系统可访问性政策。</p>
+</li>
+<li><p><code>InputDispatcher</code> 可将按键排入队列，以便在分配线程上对其进行处理。</p>
+</li>
+<li><p>当 <code>InputDispatcher</code> 将按键移出队列时，它会通过调用 <code>WindowManagerPolicy.interceptKeyBeforeDispatching</code> 使 <code>WindowManagerPolicy</code> 再次有机会拦截按键事件。此方法可用于处理系统快捷方式和其他功能。</p>
+</li>
+<li><p>随后，<code>InputDispatcher</code> 会识别按键事件目标（获得焦点的窗口），并等待按键事件目标就绪。接下来，<code>InputDispatcher</code> 会将按键事件发送到应用。</p>
+</li>
+<li><p>在应用内，按键事件会沿着视图层次结构向下传送到获得焦点的视图，以进行 IME 按键预分配。</p>
+</li>
+<li><p>如果按键事件未在 IME 按键预分配阶段进行处理，而某个 IME 正在使用中，那么按键事件会被发送到 IME。</p>
+</li>
+<li><p>如果 IME 未消费按键事件，那么按键事件会沿着视图层次结构向下传送到获得焦点的视图，从而进行标准按键分配。</p>
+</li>
+<li><p>应用反过来向 <code>InputDispatcher</code> 报告有关按键事件是否被使用的情况。如果事件未被使用，<code>InputDispatcher</code> 会调用 <code>WindowManagerPolicy.dispatchUnhandledKey</code> 来应用 “回退” 行为。根据回退操作，可以使用不同的按键代码重新启动按键事件分配周期。例如，如果应用不处理 <code>KEYCODE_ESCAPE</code>，系统可能会改为将按键事件作为 <code>KEYCODE_BACK</code> 再次分配。</p>
+</li>
+</ol>
+<p><a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=HID&spm=1001.2101.3001.7020">HID</a> 用途用两个码值表示，分别代表键的类型和键值，比如 0x07 代表该键的类型为<strong>功能键</strong>，0x0001 代表<strong>键值。<strong>以 USB 遥控器为例</strong>：</strong></p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://i-blog.csdnimg.cn/blog_migrate/af6166bb6b098a030f93f74576324abb.jpeg"></p>
+<p><strong>常见的按键分类如下：</strong></p>
+<ol>
+<li><p><strong>控制键（Control Key）：</strong></p>
+<ul>
+<li>码值 0x01：Ctrl 键</li>
+</ul>
+</li>
+<li><p><strong>转换键（Modifier Key）：</strong></p>
+<ul>
+<li>码值 0x02：Shift 键</li>
+<li>码值 0x03：Alt 键</li>
+<li>码值 0x04：GUI 键（例如，Windows 键或 Command 键）</li>
+<li>码值 0x05：Caps Lock 键</li>
+<li>码值 0x06：Num Lock 键</li>
+</ul>
+</li>
+<li><p><strong>导航键（Navigation Key）：</strong></p>
+<ul>
+<li>码值 0x08：上箭头</li>
+<li>码值 0x09：下箭头</li>
+<li>码值 0x0A：右箭头</li>
+<li>码值 0x0B：左箭头</li>
+<li>码值 0x0C：主页键</li>
+<li>码值 0x0D：结束键</li>
+<li>码值 0x0E：页面上键</li>
+<li>码值 0x0F：页面下键</li>
+</ul>
+</li>
+<li><p><strong>功能键（Function Key）：</strong></p>
+<ul>
+<li>码值 0x07：通常表示功能键，但也可以有其他自定义功能键的码值</li>
+</ul>
+</li>
+</ol>
+<h6 id="HID-用途、Linux-按键代码和-Android-按键代码"><a href="#HID-用途、Linux-按键代码和-Android-按键代码" class="headerlink" title="HID 用途、Linux 按键代码和 Android 按键代码"></a>HID 用途、Linux 按键代码和 Android 按键代码</h6><p>LKC 列可采用十六进制格式指定 Linux 按键代码。</p>
+<p>AKC 列可采用十六进制格式指定 Android 按键代码。</p>
+<table>
+<thead>
+<tr>
+<th>HID 用途</th><th>HID 用途名称</th><th>LKC</th><th>Linux 按键代码名称</th><th>版本</th><th>AKC</th><th>Android 按键代码名称</th><th>备注</th></tr></thead><tbody><tr><td>0x07 0x0001</td><td>键盘错误，防冲突功能</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0002</td><td>键盘 POST 失败</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0003</td><td>键盘错误未定义</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0004</td><td>键盘 a 和 A 键</td><td>0x001e</td><td>KEY_A</td><td>1.6</td><td>0x001d</td><td>KEYCODE_A</td><td>1</td></tr><tr><td>0x07 0x0005</td><td>键盘 b 和 B 键</td><td>0x0030</td><td>KEY_B</td><td>1.6</td><td>0x001e</td><td>KEYCODE_B</td><td>1</td></tr><tr><td>0x07 0x0006</td><td>键盘 c 和 C 键</td><td>0x002e</td><td>KEY_C</td><td>1.6</td><td>0x001f</td><td>KEYCODE_C</td><td>1</td></tr><tr><td>0x07 0x0007</td><td>键盘 d 和 D 键</td><td>0x0020</td><td>KEY_D</td><td>1.6</td><td>0x0020</td><td>KEYCODE_D</td><td>1</td></tr><tr><td>0x07 0x0008</td><td>键盘 e 和 E 键</td><td>0x0012</td><td>KEY_E</td><td>1.6</td><td>0x0021</td><td>KEYCODE_E</td><td>1</td></tr><tr><td>0x07 0x0009</td><td>键盘 f 和 F 键</td><td>0x0021</td><td>KEY_F</td><td>1.6</td><td>0x0022</td><td>KEYCODE_F</td><td>1</td></tr><tr><td>0x07 0x000a</td><td>键盘 g 和 G 键</td><td>0x0022</td><td>KEY_G</td><td>1.6</td><td>0x0023</td><td>KEYCODE_G</td><td>1</td></tr><tr><td>0x07 0x000b</td><td>键盘 h 和 H 键</td><td>0x0023</td><td>KEY_H</td><td>1.6</td><td>0x0024</td><td>KEYCODE_H</td><td>1</td></tr><tr><td>0x07 0x000c</td><td>键盘 i 和 I 键</td><td>0x0017</td><td>KEY_I</td><td>1.6</td><td>0x0025</td><td>KEYCODE_I</td><td>1</td></tr><tr><td>0x07 0x000d</td><td>键盘 j 和 J 键</td><td>0x0024</td><td>KEY_J</td><td>1.6</td><td>0x0026</td><td>KEYCODE_J</td><td>1</td></tr><tr><td>0x07 0x000e</td><td>键盘 k 和 K 键</td><td>0x0025</td><td>KEY_K</td><td>1.6</td><td>0x0027</td><td>KEYCODE_K</td><td>1</td></tr><tr><td>0x07 0x000f</td><td>键盘 l 和 L 键</td><td>0x0026</td><td>KEY_L</td><td>1.6</td><td>0x0028</td><td>KEYCODE_L</td><td>1</td></tr><tr><td>0x07 0x0010</td><td>键盘 m 和 M 键</td><td>0x0032</td><td>KEY_M</td><td>1.6</td><td>0x0029</td><td>KEYCODE_M</td><td>1</td></tr><tr><td>0x07 0x0011</td><td>键盘 n 和 N 键</td><td>0x0031</td><td>KEY_N</td><td>1.6</td><td>0x002a</td><td>KEYCODE_N</td><td>1</td></tr><tr><td>0x07 0x0012</td><td>键盘 o 和 O 键</td><td>0x0018</td><td>KEY_O</td><td>1.6</td><td>0x002b</td><td>KEYCODE_O</td><td>1</td></tr><tr><td>0x07 0x0013</td><td>键盘 p 和 P 键</td><td>0x0019</td><td>KEY_P</td><td>1.6</td><td>0x002c</td><td>KEYCODE_P</td><td>1</td></tr><tr><td>0x07 0x0014</td><td>键盘 q 和 Q 键</td><td>0x0010</td><td>KEY_Q</td><td>1.6</td><td>0x002d</td><td>KEYCODE_Q</td><td>1</td></tr><tr><td>0x07 0x0015</td><td>键盘 r 和 R 键</td><td>0x0013</td><td>KEY_R</td><td>1.6</td><td>0x002e</td><td>KEYCODE_R</td><td>1</td></tr><tr><td>0x07 0x0016</td><td>键盘 s 和 S 键</td><td>0x001f</td><td>KEY_S</td><td>1.6</td><td>0x002f</td><td>KEYCODE_S</td><td>1</td></tr><tr><td>0x07 0x0017</td><td>键盘 t 和 T 键</td><td>0x0014</td><td>KEY_T</td><td>1.6</td><td>0x0030</td><td>KEYCODE_T</td><td>1</td></tr><tr><td>0x07 0x0018</td><td>键盘 u 和 U 键</td><td>0x0016</td><td>KEY_U</td><td>1.6</td><td>0x0031</td><td>KEYCODE_U</td><td>1</td></tr><tr><td>0x07 0x0019</td><td>键盘 v 和 V 键</td><td>0x002f</td><td>KEY_V</td><td>1.6</td><td>0x0032</td><td>KEYCODE_V</td><td>1</td></tr><tr><td>0x07 0x001a</td><td>键盘 w 和 W 键</td><td>0x0011</td><td>KEY_W</td><td>1.6</td><td>0x0033</td><td>KEYCODE_W</td><td>1</td></tr><tr><td>0x07 0x001b</td><td>键盘 x 和 X 键</td><td>0x002d</td><td>KEY_X</td><td>1.6</td><td>0x0034</td><td>KEYCODE_X</td><td>1</td></tr><tr><td>0x07 0x001c</td><td>键盘 y 和 Y 键</td><td>0x0015</td><td>KEY_Y</td><td>1.6</td><td>0x0035</td><td>KEYCODE_Y</td><td>1</td></tr><tr><td>0x07 0x001d</td><td>键盘 z 和 Z 键</td><td>0x002c</td><td>KEY_Z</td><td>1.6</td><td>0x0036</td><td>KEYCODE_Z</td><td>1</td></tr><tr><td>0x07 0x001e</td><td>键盘 1 和 ! 键</td><td>0x0002</td><td>KEY_1</td><td>1.6</td><td>0x0008</td><td>KEYCODE_1</td><td>1</td></tr><tr><td>0x07 0x001f</td><td>键盘 2 和 @ 键</td><td>0x0003</td><td>KEY_2</td><td>1.6</td><td>0x0009</td><td>KEYCODE_2</td><td>1</td></tr><tr><td>0x07 0x0020</td><td>键盘 3 和 # 键</td><td>0x0004</td><td>KEY_3</td><td>1.6</td><td>0x000a</td><td>KEYCODE_3</td><td>1</td></tr><tr><td>0x07 0x0021</td><td>键盘 4 和 $ 键</td><td>0x0005</td><td>KEY_4</td><td>1.6</td><td>0x000b</td><td>KEYCODE_4</td><td>1</td></tr><tr><td>0x07 0x0022</td><td>键盘 5 和 % 键</td><td>0x0006</td><td>KEY_5</td><td>1.6</td><td>0x000c</td><td>KEYCODE_5</td><td>1</td></tr><tr><td>0x07 0x0023</td><td>键盘 6 和 ^ 键</td><td>0x0007</td><td>KEY_6</td><td>1.6</td><td>0x000d</td><td>KEYCODE_6</td><td>1</td></tr><tr><td>0x07 0x0024</td><td>键盘 7 和 &amp; 键</td><td>0x0008</td><td>KEY_7</td><td>1.6</td><td>0x000e</td><td>KEYCODE_7</td><td>1</td></tr><tr><td>0x07 0x0025</td><td>键盘 8 和 * 键</td><td>0x0009</td><td>KEY_8</td><td>1.6</td><td>0x000f</td><td>KEYCODE_8</td><td>1</td></tr><tr><td>0x07 0x0026</td><td>键盘 9 和 ( 键</td><td>0x000a</td><td>KEY_9</td><td>1.6</td><td>0x0010</td><td>KEYCODE_9</td><td>1</td></tr><tr><td>0x07 0x0027</td><td>键盘 0 和 ) 键</td><td>0x000b</td><td>KEY_0</td><td>1.6</td><td>0x0007</td><td>KEYCODE_0</td><td>1</td></tr><tr><td>0x07 0x0028</td><td>键盘返回 (Enter) 键</td><td>0x001c</td><td>KEY_ENTER</td><td>1.6</td><td>0x0042</td><td>KEYCODE_ENTER</td><td>1</td></tr><tr><td>0x07 0x0029</td><td>键盘 Esc 键</td><td>0x0001</td><td>KEY_ESC</td><td>3.0</td><td>0x006f</td><td>KEYCODE_ESCAPE</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>2.3</td><td>0x0004</td><td>KEYCODE_BACK</td><td></td></tr><tr><td>0x07 0x002a</td><td>键盘删除 (Backspace) 键</td><td>0x000e</td><td>KEY_BACKSPACE</td><td>1.6</td><td>0x0043</td><td>KEYCODE_DEL</td><td></td></tr><tr><td>0x07 0x002b</td><td>键盘 Tab 键</td><td>0x000f</td><td>KEY_TAB</td><td>1.6</td><td>0x003d</td><td>KEYCODE_TAB</td><td></td></tr><tr><td>0x07 0x002c</td><td>键盘空格键</td><td>0x0039</td><td>KEY_SPACE</td><td>1.6</td><td>0x003e</td><td>KEYCODE_SPACE</td><td></td></tr><tr><td>0x07 0x002d</td><td>键盘 - 和 _ 键</td><td>0x000c</td><td>KEY_MINUS</td><td>1.6</td><td>0x0045</td><td>KEYCODE_MINUS</td><td>1</td></tr><tr><td>0x07 0x002e</td><td>键盘 = 和 + 键</td><td>0x000d</td><td>KEY_EQUAL</td><td>1.6</td><td>0x0046</td><td>KEYCODE_EQUALS</td><td>1</td></tr><tr><td>0x07 0x002f</td><td>键盘 [ 和 { 键</td><td>0x001a</td><td>KEY_LEFTBRACE</td><td>1.6</td><td>0x0047</td><td>KEYCODE_LEFT_BRACKET</td><td>1</td></tr><tr><td>0x07 0x0030</td><td>键盘 ] 和 } 键</td><td>0x001b</td><td>KEY_RIGHTBRACE</td><td>1.6</td><td>0x0048</td><td>KEYCODE_RIGHT_BRACKET</td><td>1</td></tr><tr><td>0x07 0x0031</td><td>键盘 \ 和 | 键</td><td>0x002b</td><td>KEY_BACKSLASH</td><td>1.6</td><td>0x0049</td><td>KEYCODE_BACKSLASH</td><td>1</td></tr><tr><td>0x07 0x0032</td><td>键盘非美式 # 和 ~ 键</td><td>0x002b</td><td>KEY_BACKSLASH</td><td>1.6</td><td>0x0049</td><td>KEYCODE_BACKSLASH</td><td>1</td></tr><tr><td>0x07 0x0033</td><td>键盘 ; 和 : 键</td><td>0x0027</td><td>KEY_SEMICOLON</td><td>1.6</td><td>0x004a</td><td>KEYCODE_SEMICOLON</td><td>1</td></tr><tr><td>0x07 0x0034</td><td>键盘 '和" 键</td><td>0x0028</td><td>KEY_APOSTROPHE</td><td>1.6</td><td>0x004b</td><td>KEYCODE_APOSTROPHE</td><td>1</td></tr><tr><td>0x07 0x0035</td><td>键盘 ` 和 ~ 键</td><td>0x0029</td><td>KEY_GRAVE</td><td>3.0</td><td>0x0044</td><td>KEYCODE_GRAVE</td><td>1</td></tr><tr><td>0x07 0x0036</td><td>键盘 , 和 &lt; 键</td><td>0x0033</td><td>KEY_COMMA</td><td>1.6</td><td>0x0037</td><td>KEYCODE_COMMA</td><td>1</td></tr><tr><td>0x07 0x0037</td><td>键盘 . 和 &gt; 键</td><td>0x0034</td><td>KEY_DOT</td><td>1.6</td><td>0x0038</td><td>KEYCODE_PERIOD</td><td>1</td></tr><tr><td>0x07 0x0038</td><td>键盘 / 和 ? 键</td><td>0x0035</td><td>KEY_SLASH</td><td>1.6</td><td>0x004c</td><td>KEYCODE_SLASH</td><td>1</td></tr><tr><td>0x07 0x0039</td><td>键盘 Caps Lock 键</td><td>0x003a</td><td>KEY_CAPSLOCK</td><td>3.0</td><td>0x0073</td><td>KEYCODE_CAPS_LOCK</td><td></td></tr><tr><td>0x07 0x003a</td><td>键盘 F1 键</td><td>0x003b</td><td>KEY_F1</td><td>3.0</td><td>0x0083</td><td>KEYCODE_F1</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0052</td><td>KEYCODE_MENU</td><td></td></tr><tr><td>0x07 0x003b</td><td>键盘 F2 键</td><td>0x003c</td><td>KEY_F2</td><td>3.0</td><td>0x0084</td><td>KEYCODE_F2</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0002</td><td>KEYCODE_SOFT_RIGHT</td><td></td></tr><tr><td>0x07 0x003c</td><td>键盘 F3 键</td><td>0x003d</td><td>KEY_F3</td><td>3.0</td><td>0x0085</td><td>KEYCODE_F3</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0005</td><td>KEYCODE_CALL</td><td></td></tr><tr><td>0x07 0x003d</td><td>键盘 F4 键</td><td>0x003e</td><td>KEY_F4</td><td>3.0</td><td>0x0086</td><td>KEYCODE_F4</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0006</td><td>KEYCODE_ENDCALL</td><td></td></tr><tr><td>0x07 0x003e</td><td>键盘 F5 键</td><td>0x003f</td><td>KEY_F5</td><td>3.0</td><td>0x0087</td><td>KEYCODE_F5</td><td></td></tr><tr><td>0x07 0x003f</td><td>键盘 F6 键</td><td>0x0040</td><td>KEY_F6</td><td>3.0</td><td>0x0088</td><td>KEYCODE_F6</td><td></td></tr><tr><td>0x07 0x0040</td><td>键盘 F7 键</td><td>0x0041</td><td>KEY_F7</td><td>3.0</td><td>0x0089</td><td>KEYCODE_F7</td><td></td></tr><tr><td>0x07 0x0041</td><td>键盘 F8 键</td><td>0x0042</td><td>KEY_F8</td><td>3.0</td><td>0x008a</td><td>KEYCODE_F8</td><td></td></tr><tr><td>0x07 0x0042</td><td>键盘 F9 键</td><td>0x0043</td><td>KEY_F9</td><td>3.0</td><td>0x008b</td><td>KEYCODE_F9</td><td></td></tr><tr><td>0x07 0x0043</td><td>键盘 F10 键</td><td>0x0044</td><td>KEY_F10</td><td>3.0</td><td>0x008c</td><td>KEYCODE_F10</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>2.3</td><td>0x0052</td><td>KEYCODE_MENU</td><td></td></tr><tr><td>0x07 0x0044</td><td>键盘 F11 键</td><td>0x0057</td><td>KEY_F11</td><td>3.0</td><td>0x008d</td><td>KEYCODE_F11</td><td></td></tr><tr><td>0x07 0x0045</td><td>键盘 F12 键</td><td>0x0058</td><td>KEY_F12</td><td>3.0</td><td>0x008e</td><td>KEYCODE_F12</td><td></td></tr><tr><td>0x07 0x0046</td><td>键盘 Print Screen 键</td><td>0x0063</td><td>KEY_SYSRQ</td><td>3.0</td><td>0x0078</td><td>KEYCODE_SYSRQ</td><td></td></tr><tr><td>0x07 0x0047</td><td>键盘 Scroll Lock 键</td><td>0x0046</td><td>KEY_SCROLLLOCK</td><td>3.0</td><td>0x0074</td><td>KEYCODE_SCROLL_LOCK</td><td></td></tr><tr><td>0x07 0x0048</td><td>键盘 Pause 键</td><td>0x0077</td><td>KEY_PAUSE</td><td>3.0</td><td>0x0079</td><td>KEYCODE_BREAK</td><td></td></tr><tr><td>0x07 0x0049</td><td>键盘 Insert 键</td><td>0x006e</td><td>KEY_INSERT</td><td>3.0</td><td>0x007c</td><td>KEYCODE_INSERT</td><td></td></tr><tr><td>0x07 0x004a</td><td>键盘 Home 键</td><td>0x0066</td><td>KEY_HOME</td><td>3.0</td><td>0x007a</td><td>KEYCODE_MOVE_HOME</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0003</td><td>KEYCODE_HOME</td><td></td></tr><tr><td>0x07 0x004b</td><td>键盘 Page Up 键</td><td>0x0068</td><td>KEY_PAGEUP</td><td>3.0</td><td>0x005c</td><td>KEYCODE_PAGE_UP</td><td></td></tr><tr><td>0x07 0x004c</td><td>键盘 Delete Forward 键</td><td>0x006f</td><td>KEY_DELETE</td><td>3.0</td><td>0x0070</td><td>KEYCODE_FORWARD_DEL</td><td></td></tr><tr><td>0x07 0x004d</td><td>键盘 End 键</td><td>0x006b</td><td>KEY_END</td><td>3.0</td><td>0x007b</td><td>KEYCODE_MOVE_END</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0006</td><td>KEYCODE_ENDCALL</td><td></td></tr><tr><td>0x07 0x004e</td><td>键盘 Page Down 键</td><td>0x006d</td><td>KEY_PAGEDOWN</td><td>3.0</td><td>0x005d</td><td>KEYCODE_PAGE_DOWN</td><td></td></tr><tr><td>0x07 0x004f</td><td>键盘向右箭头键</td><td>0x006a</td><td>KEY_RIGHT</td><td>1.6</td><td>0x0016</td><td>KEYCODE_DPAD_RIGHT</td><td></td></tr><tr><td>0x07 0x0050</td><td>键盘向左箭头键</td><td>0x0069</td><td>KEY_LEFT</td><td>1.6</td><td>0x0015</td><td>KEYCODE_DPAD_LEFT</td><td></td></tr><tr><td>0x07 0x0051</td><td>键盘向下箭头键</td><td>0x006c</td><td>KEY_DOWN</td><td>1.6</td><td>0x0014</td><td>KEYCODE_DPAD_DOWN</td><td></td></tr><tr><td>0x07 0x0052</td><td>键盘向上箭头键</td><td>0x0067</td><td>KEY_UP</td><td>1.6</td><td>0x0013</td><td>KEYCODE_DPAD_UP</td><td></td></tr><tr><td>0x07 0x0053</td><td>键盘 Num Lock 和 Clear 键</td><td>0x0045</td><td>KEY_NUMLOCK</td><td>3.0</td><td>0x008f</td><td>KEYCODE_NUM_LOCK</td><td></td></tr><tr><td>0x07 0x0054</td><td>小键盘 / 键</td><td>0x0062</td><td>KEY_KPSLASH</td><td>3.0</td><td>0x009a</td><td>KEYCODE_NUMPAD_DIVIDE</td><td></td></tr><tr><td>0x07 0x0055</td><td>小键盘 * 键</td><td>0x0037</td><td>KEY_KPASTERISK</td><td>3.0</td><td>0x009b</td><td>KEYCODE_NUMPAD_MULTIPLY</td><td></td></tr><tr><td>0x07 0x0056</td><td>小键盘 - 键</td><td>0x004a</td><td>KEY_KPMINUS</td><td>3.0</td><td>0x009c</td><td>KEYCODE_NUMPAD_SUBTRACT</td><td></td></tr><tr><td>0x07 0x0057</td><td>小键盘 + 键</td><td>0x004e</td><td>KEY_KPPLUS</td><td>3.0</td><td>0x009d</td><td>KEYCODE_NUMPAD_ADD</td><td></td></tr><tr><td>0x07 0x0058</td><td>小键盘 Enter 键</td><td>0x0060</td><td>KEY_KPENTER</td><td>3.0</td><td>0x00a0</td><td>KEYCODE_NUMPAD_ENTER</td><td></td></tr><tr><td>0x07 0x0059</td><td>小键盘 1 和 End 键</td><td>0x004f</td><td>KEY_KP1</td><td>3.0</td><td>0x0091</td><td>KEYCODE_NUMPAD_1</td><td></td></tr><tr><td>0x07 0x005a</td><td>小键盘 2 和向下箭头键</td><td>0x0050</td><td>KEY_KP2</td><td>3.0</td><td>0x0092</td><td>KEYCODE_NUMPAD_2</td><td></td></tr><tr><td>0x07 0x005b</td><td>小键盘 3 和 PageDn 键</td><td>0x0051</td><td>KEY_KP3</td><td>3.0</td><td>0x0093</td><td>KEYCODE_NUMPAD_3</td><td></td></tr><tr><td>0x07 0x005c</td><td>小键盘 4 和向左箭头键</td><td>0x004b</td><td>KEY_KP4</td><td>3.0</td><td>0x0094</td><td>KEYCODE_NUMPAD_4</td><td></td></tr><tr><td>0x07 0x005d</td><td>小键盘 5 键</td><td>0x004c</td><td>KEY_KP5</td><td>3.0</td><td>0x0095</td><td>KEYCODE_NUMPAD_5</td><td></td></tr><tr><td>0x07 0x005e</td><td>小键盘 6 和向右箭头键</td><td>0x004d</td><td>KEY_KP6</td><td>3.0</td><td>0x0096</td><td>KEYCODE_NUMPAD_6</td><td></td></tr><tr><td>0x07 0x005f</td><td>小键盘 7 和 Home 键</td><td>0x0047</td><td>KEY_KP7</td><td>3.0</td><td>0x0097</td><td>KEYCODE_NUMPAD_7</td><td></td></tr><tr><td>0x07 0x0060</td><td>小键盘 8 和向上箭头键</td><td>0x0048</td><td>KEY_KP8</td><td>3.0</td><td>0x0098</td><td>KEYCODE_NUMPAD_8</td><td></td></tr><tr><td>0x07 0x0061</td><td>小键盘 9 和 Page Up 键</td><td>0x0049</td><td>KEY_KP9</td><td>3.0</td><td>0x0099</td><td>KEYCODE_NUMPAD_9</td><td></td></tr><tr><td>0x07 0x0062</td><td>小键盘 0 和 Insert 键</td><td>0x0052</td><td>KEY_KP0</td><td>3.0</td><td>0x0090</td><td>KEYCODE_NUMPAD_0</td><td></td></tr><tr><td>0x07 0x0063</td><td>小键盘 . 键（删除键）</td><td>0x0053</td><td>KEY_KPDOT</td><td>3.0</td><td>0x009e</td><td>KEYCODE_NUMPAD_DOT</td><td></td></tr><tr><td>0x07 0x0064</td><td>键盘 Non-US \ 和 | 键</td><td>0x0056</td><td>KEY_102ND</td><td>4.0</td><td>0x0049</td><td>KEYCODE_BACKSLASH</td><td>1</td></tr><tr><td>0x07 0x0065</td><td>键盘应用键</td><td>0x007f</td><td>KEY_COMPOSE</td><td>3.0</td><td>0x0052</td><td>KEYCODE_MENU</td><td></td></tr><tr><td>""</td><td>""</td><td>""</td><td>""</td><td>1.6</td><td>0x0054</td><td>KEYCODE_SEARCH</td><td></td></tr><tr><td>0x07 0x0066</td><td>键盘 Power 键</td><td>0x0074</td><td>KEY_POWER</td><td>1.6</td><td>0x001a</td><td>KEYCODE_POWER</td><td></td></tr><tr><td>0x07 0x0067</td><td>小键盘 = 键</td><td>0x0075</td><td>KEY_KPEQUAL</td><td>3.0</td><td>0x00a1</td><td>KEYCODE_NUMPAD_EQUALS</td><td></td></tr><tr><td>0x07 0x0068</td><td>键盘 F13 键</td><td>0x00b7</td><td>KEY_F13</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0069</td><td>键盘 F14 键</td><td>0x00b8</td><td>KEY_F14</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x006a</td><td>键盘 F15 键</td><td>0x00b9</td><td>KEY_F15</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x006b</td><td>键盘 F16 键</td><td>0x00ba</td><td>KEY_F16</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x006c</td><td>键盘 F17 键</td><td>0x00bb</td><td>KEY_F17</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x006d</td><td>键盘 F18 键</td><td>0x00bc</td><td>KEY_F18</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x006e</td><td>键盘 F19 键</td><td>0x00bd</td><td>KEY_F19</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x006f</td><td>键盘 F20 键</td><td>0x00be</td><td>KEY_F20</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0070</td><td>键盘 F21 键</td><td>0x00bf</td><td>KEY_F21</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0071</td><td>键盘 F22 键</td><td>0x00c0</td><td>KEY_F22</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0072</td><td>键盘 F23 键</td><td>0x00c1</td><td>KEY_F23</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0073</td><td>键盘 F24 键</td><td>0x00c2</td><td>KEY_F24</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0074</td><td>键盘 Execute 键</td><td>0x0086</td><td>KEY_OPEN</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0075</td><td>键盘帮助键</td><td>0x008a</td><td>KEY_HELP</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0076</td><td>键盘菜单键</td><td>0x0082</td><td>KEY_PROPS</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0077</td><td>键盘 Select 键</td><td>0x0084</td><td>KEY_FRONT</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0078</td><td>键盘 Stop 键</td><td>0x0080</td><td>KEY_STOP</td><td>3.0</td><td>0x0056</td><td>KEYCODE_MEDIA_STOP</td><td></td></tr><tr><td>0x07 0x0079</td><td>键盘 Again 键</td><td>0x0081</td><td>KEY_AGAIN</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x007a</td><td>键盘 Undo 键</td><td>0x0083</td><td>KEY_UNDO</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x007b</td><td>键盘 Cut 键</td><td>0x0089</td><td>KEY_CUT</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x007c</td><td>键盘 Copy 键</td><td>0x0085</td><td>KEY_COPY</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x007d</td><td>键盘 Paste 键</td><td>0x0087</td><td>KEY_PASTE</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x007e</td><td>键盘 Find 键</td><td>0x0088</td><td>KEY_FIND</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x007f</td><td>键盘 Mute 键</td><td>0x0071</td><td>KEY_MUTE</td><td>3.0</td><td>0x00a4</td><td>KEYCODE_VOLUME_MUTE</td><td></td></tr><tr><td>0x07 0x0080</td><td>键盘音量调高键</td><td>0x0073</td><td>KEY_VOLUMEUP</td><td>1.6</td><td>0x0018</td><td>KEYCODE_VOLUME_UP</td><td></td></tr><tr><td>0x07 0x0081</td><td>键盘音量调低键</td><td>0x0072</td><td>KEY_VOLUMEDOWN</td><td>1.6</td><td>0x0019</td><td>KEYCODE_VOLUME_DOWN</td><td></td></tr><tr><td>0x07 0x0082</td><td>键盘锁定 Caps Lock 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0083</td><td>键盘锁定 Num Lock 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0084</td><td>键盘锁定 Scroll Lock 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0085</td><td>小键盘逗号键</td><td>0x0079</td><td>KEY_KPCOMMA</td><td>3.0</td><td>0x009f</td><td>KEYCODE_NUMPAD_COMMA</td><td></td></tr><tr><td>0x07 0x0086</td><td>小键盘等号键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0087</td><td>键盘 International1</td><td>0x0059</td><td>KEY_RO</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0088</td><td>键盘 International2</td><td>0x005d</td><td>KEY_KATAKANAHIRAGANA</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0089</td><td>键盘 International3</td><td>0x007c</td><td>KEY_YEN</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x008a</td><td>键盘 International4</td><td>0x005c</td><td>KEY_HENKAN</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x008b</td><td>键盘 International5</td><td>0x005e</td><td>KEY_MUHENKAN</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x008c</td><td>键盘 International6</td><td>0x005f</td><td>KEY_KPJPCOMMA</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x008d</td><td>键盘 International7</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x008e</td><td>键盘 International8</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x008f</td><td>键盘 International9</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0090</td><td>键盘 LANG1</td><td>0x007a</td><td>KEY_HANGEUL</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0091</td><td>键盘 LANG2</td><td>0x007b</td><td>KEY_HANJA</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0092</td><td>键盘 LANG3</td><td>0x005a</td><td>KEY_KATAKANA</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0093</td><td>键盘 LANG4</td><td>0x005b</td><td>KEY_HIRAGANA</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0094</td><td>键盘 LANG5</td><td>0x0055</td><td>KEY_ZENKAKUHANKAKU</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0095</td><td>键盘 LANG6</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0096</td><td>键盘 LANG7</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0097</td><td>键盘 LANG8</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0098</td><td>键盘 LANG9</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x0099</td><td>键盘 Alternate Erase 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x009a</td><td>键盘 SysReq/Attention 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x009b</td><td>键盘 Cancel 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x009c</td><td>键盘 Clear 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x009d</td><td>键盘 Prior 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x009e</td><td>键盘 Return 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x009f</td><td>键盘 Separator 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00a0</td><td>键盘 Out 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00a1</td><td>键盘 Oper 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00a2</td><td>键盘 Clear/Again 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00a3</td><td>键盘 CrSel/Props 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00a4</td><td>键盘 ExSel 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b0</td><td>小键盘 00</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b1</td><td>小键盘 000</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b2</td><td>千位分隔符</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b3</td><td>十进制分隔符</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b4</td><td>货币单位</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b5</td><td>货币次单位</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b6</td><td>小键盘 ( 键</td><td>0x00b3</td><td>KEY_KPLEFTPAREN</td><td>3.0</td><td>0x00a2</td><td>KEYCODE_NUMPAD_LEFT_PAREN</td><td></td></tr><tr><td>0x07 0x00b7</td><td>小键盘 ) 键</td><td>0x00b4</td><td>KEY_KPRIGHTPAREN</td><td>3.0</td><td>0x00a3</td><td>KEYCODE_NUMPAD_RIGHT_PAREN</td><td></td></tr><tr><td>0x07 0x00b8</td><td>小键盘 { 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00b9</td><td>小键盘 } 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00ba</td><td>小键盘 Tab 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00bb</td><td>小键盘 Backspace 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00bc</td><td>小键盘 A 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00bd</td><td>小键盘 B 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00be</td><td>小键盘 C 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00bf</td><td>小键盘 D 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c0</td><td>小键盘 E 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c1</td><td>小键盘 F 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c2</td><td>小键盘 XOR 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c3</td><td>小键盘 ^ 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c4</td><td>小键盘 % 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c5</td><td>小键盘 &lt; 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c6</td><td>小键盘 &gt; 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c7</td><td>小键盘 &amp; 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c8</td><td>小键盘 &amp;&amp; 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00c9</td><td>小键盘 | 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00ca</td><td>小键盘 || 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00cb</td><td>小键盘 : 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00cc</td><td>小键盘 # 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00cd</td><td>小键盘空格键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00ce</td><td>小键盘 @ 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00cf</td><td>小键盘 ! 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d0</td><td>小键盘 Memory Store 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d1</td><td>小键盘 Memory Recall 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d2</td><td>小键盘 Memory Clear 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d3</td><td>小键盘 Memory Add 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d4</td><td>小键盘 Memory Subtract 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d5</td><td>小键盘 Memory Multiply 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d6</td><td>小键盘 Memory Divide 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d7</td><td>小键盘 +/- 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d8</td><td>小键盘 Clear 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00d9</td><td>小键盘 Clear Entry 键</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00da</td><td>小键盘二进制数</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00db</td><td>小键盘八进制数</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00dc</td><td>小键盘十进制数</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00dd</td><td>小键盘十六进制数</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00e0</td><td>键盘左 Ctrl 键</td><td>0x001d</td><td>KEY_LEFTCTRL</td><td>3.0</td><td>0x0071</td><td>KEYCODE_CTRL_LEFT</td><td></td></tr><tr><td>0x07 0x00e1</td><td>键盘左 Shift 键</td><td>0x002a</td><td>KEY_LEFTSHIFT</td><td>1.6</td><td>0x003b</td><td>KEYCODE_SHIFT_LEFT</td><td></td></tr><tr><td>0x07 0x00e2</td><td>键盘左 Alt 键</td><td>0x0038</td><td>KEY_LEFTALT</td><td>1.6</td><td>0x0039</td><td>KEYCODE_ALT_LEFT</td><td></td></tr><tr><td>0x07 0x00e3</td><td>键盘左 GUI 键</td><td>0x007d</td><td>KEY_LEFTMETA</td><td>3.0</td><td>0x0075</td><td>KEYCODE_META_LEFT</td><td></td></tr><tr><td>0x07 0x00e4</td><td>键盘右 Ctrl 键</td><td>0x0061</td><td>KEY_RIGHTCTRL</td><td>3.0</td><td>0x0072</td><td>KEYCODE_CTRL_RIGHT</td><td></td></tr><tr><td>0x07 0x00e5</td><td>键盘右 Shift 键</td><td>0x0036</td><td>KEY_RIGHTSHIFT</td><td>1.6</td><td>0x003c</td><td>KEYCODE_SHIFT_RIGHT</td><td></td></tr><tr><td>0x07 0x00e6</td><td>键盘右 Alt 键</td><td>0x0064</td><td>KEY_RIGHTALT</td><td>1.6</td><td>0x003a</td><td>KEYCODE_ALT_RIGHT</td><td></td></tr><tr><td>0x07 0x00e7</td><td>键盘右 GUI 键</td><td>0x007e</td><td>KEY_RIGHTMETA</td><td>3.0</td><td>0x0076</td><td>KEYCODE_META_RIGHT</td><td></td></tr><tr><td>0x07 0x00e8</td><td></td><td>0x00a4</td><td>KEY_PLAYPAUSE</td><td>3.0</td><td>0x0055</td><td>KEYCODE_MEDIA_PLAY_PAUSE</td><td></td></tr><tr><td>0x07 0x00e9</td><td></td><td>0x00a6</td><td>KEY_STOPCD</td><td>3.0</td><td>0x0056</td><td>KEYCODE_MEDIA_STOP</td><td></td></tr><tr><td>0x07 0x00ea</td><td></td><td>0x00a5</td><td>KEY_PREVIOUSSONG</td><td>3.0</td><td>0x0058</td><td>KEYCODE_MEDIA_PREVIOUS</td><td></td></tr><tr><td>0x07 0x00eb</td><td></td><td>0x00a3</td><td>KEY_NEXTSONG</td><td>3.0</td><td>0x0057</td><td>KEYCODE_MEDIA_NEXT</td><td></td></tr><tr><td>0x07 0x00ec</td><td></td><td>0x00a1</td><td>KEY_EJECTCD</td><td>3.0</td><td>0x0081</td><td>KEYCODE_MEDIA_EJECT</td><td></td></tr><tr><td>0x07 0x00ed</td><td></td><td>0x0073</td><td>KEY_VOLUMEUP</td><td>1.6</td><td>0x0018</td><td>KEYCODE_VOLUME_UP</td><td></td></tr><tr><td>0x07 0x00ee</td><td></td><td>0x0072</td><td>KEY_VOLUMEDOWN</td><td>1.6</td><td>0x0019</td><td>KEYCODE_VOLUME_DOWN</td><td></td></tr><tr><td>0x07 0x00ef</td><td></td><td>0x0071</td><td>KEY_MUTE</td><td>3.0</td><td>0x00a4</td><td>KEYCODE_VOLUME_MUTE</td><td></td></tr><tr><td>0x07 0x00f0</td><td></td><td>0x0096</td><td>KEY_WWW</td><td>1.6</td><td>0x0040</td><td>KEYCODE_EXPLORER</td><td></td></tr><tr><td>0x07 0x00f1</td><td></td><td>0x009e</td><td>KEY_BACK</td><td>1.6</td><td>0x0004</td><td>KEYCODE_BACK</td><td></td></tr><tr><td>0x07 0x00f2</td><td></td><td>0x009f</td><td>KEY_FORWARD</td><td>3.0</td><td>0x007d</td><td>KEYCODE_FORWARD</td><td></td></tr><tr><td>0x07 0x00f3</td><td></td><td>0x0080</td><td>KEY_STOP</td><td>3.0</td><td>0x0056</td><td>KEYCODE_MEDIA_STOP</td><td></td></tr><tr><td>0x07 0x00f4</td><td></td><td>0x0088</td><td>KEY_FIND</td><td></td><td></td><td></td><td></td></tr><tr><td>0x07 0x00f5</td><td></td><td>0x00b1</td><td>KEY_SCROLLUP</td><td>3.0</td><td>0x005c</td><td>KEYCODE_PAGE_UP</td><td></td></tr><tr><td>0x07 0x00f6</td><td></td><td>0x00b2</td><td>KEY_SCROLLDOWN</td><td>3.0</td><td>0x005d</td><td><p>KEYCODE_PAGE_DOWN</p><p></p></td></tr></tbody></table>
+
+<p>这里提供谷歌官方有关说明链接： </p>
+<p><a target="_blank" rel="noopener" href="https://source.android.google.cn/docs/core/interaction/input/keyboard-devices?hl=zh-cn#hid-usages-linux-key-codes-and-android-key-codes" title="键盘设备  |  Android 开源项目  |  Android Open Source Project">键盘设备  |  Android 开源项目  |  Android Open Source Project</a></p>
+
+<div class="article-footer fs14">
+    <section id="license">
+      <div class="header"><span>License</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section>
+    </div>
+</article>
+<div class="related-wrap" id="read-next"><section class="body"><div class="item" id="prev"><div class="note">Newer</div><a href="/2025/03/24/%E5%B7%B2%E7%9F%A5%E5%B1%8F%E5%B9%95%E7%9A%84%E5%88%86%E8%BE%A8%E7%8E%87%E6%80%8E%E4%B9%88%E8%AE%A1%E7%AE%97%E5%B1%8F%E5%B9%95%E6%AF%94%E4%BE%8B/">已知屏幕的分辨率，整么计算屏幕比例？</a></div><div class="item" id="next"><div class="note">Older</div><a href="/2025/03/24/%E9%9A%8F%E6%9C%BA%E6%89%93%E4%B9%B1List%E6%95%B0%E7%BB%84%E4%B8%AD%E9%A1%B9%E7%9A%84%E9%A1%BA%E5%BA%8F/">C#随机打乱List数组中项的顺序</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer footnote"><hr><div class="text"><p>Copyright © 2025 <a href="/">XCLIKEE</a> </p>
+</div></footer>
+<div class="main-mask" onclick="sidebar.dismiss()"></div></div><aside class="l_right">
+<div class="widgets">
+
+
+
+<widget class="widget-wrapper toc" id="data-toc" collapse="false"><div class="widget-header dis-select"><span class="name">On This Page</span><a class="cap-action" onclick="sidebar.toggleTOC()" ><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></a></div><div class="widget-body"><ol class="toc"><li class="toc-item toc-level-6"><a class="toc-link" href="#HID-%E7%94%A8%E9%80%94%E3%80%81Linux-%E6%8C%89%E9%94%AE%E4%BB%A3%E7%A0%81%E5%92%8C-Android-%E6%8C%89%E9%94%AE%E4%BB%A3%E7%A0%81"><span class="toc-text">HID 用途、Linux 按键代码和 Android 按键代码</span></a></li></ol></div><div class="widget-footer">
+
+<a class="top" onclick="util.scrollTop()"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c0-4.714 0-7.071 1.464-8.536C4.93 2 7.286 2 12 2c4.714 0 7.071 0 8.535 1.464C22 4.93 22 7.286 22 12c0 4.714 0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 15.5l3-3l3 3m-6-4l3-3l3 3"/></g></svg><span>Scroll to Top</span></a></div></widget>
+</div></aside><div class='float-panel blur'>
+  <button type='button' style='display:none' class='laptop-only rightbar-toggle mobile' onclick='sidebar.rightbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+  </button>
+  <button type='button' style='display:none' class='mobile-only leftbar-toggle mobile' onclick='sidebar.leftbar()'>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"/><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"/></g></svg>
+  </button>
+</div>
+</div><div class="scripts">
+<script type="text/javascript">
+  const ctx = {
+    date_suffix: {
+      just: `Just`,
+      min: `minutes ago`,
+      hour: `hours ago`,
+      day: `days ago`,
+    },
+    root : `/`,
+  };
+
+  // required plugins (only load if needs)
+  if (`local_search`) {
+    ctx.search = {};
+    ctx.search.service = `local_search`;
+    if (ctx.search.service == 'local_search') {
+      let service_obj = Object.assign({}, `{"field":"all","path":"/search.json","content":true,"sort":"-date"}`);
+      ctx.search[ctx.search.service] = service_obj;
+    }
+  }
+  const def = {
+    avatar: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg`,
+    cover: `https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/cover/76b86c0226ffd.svg`,
+  };
+  const deps = {
+    jquery: `https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js`,
+    marked: `https://cdn.jsdelivr.net/npm/marked@13.0.1/lib/marked.umd.min.js`
+  }
+  
+
+</script>
+
+<script type="text/javascript">
+  const utils = {
+    // 懒加载 css https://github.com/filamentgroup/loadCSS
+    css: (href, before, media, attributes) => {
+      var doc = window.document;
+      var ss = doc.createElement("link");
+      var ref;
+      if (before) {
+        ref = before;
+      } else {
+        var refs = (doc.body || doc.getElementsByTagName("head")[0]).childNodes;
+        ref = refs[refs.length - 1];
+      }
+      var sheets = doc.styleSheets;
+      if (attributes) {
+        for (var attributeName in attributes) {
+          if (attributes.hasOwnProperty(attributeName)) {
+            ss.setAttribute(attributeName, attributes[attributeName]);
+          }
+        }
+      }
+      ss.rel = "stylesheet";
+      ss.href = href;
+      ss.media = "only x";
+      function ready(cb) {
+        if (doc.body) {
+          return cb();
+        }
+        setTimeout(function () {
+          ready(cb);
+        });
+      }
+      ready(function () {
+        ref.parentNode.insertBefore(ss, before ? ref : ref.nextSibling);
+      });
+      var onloadcssdefined = function (cb) {
+        var resolvedHref = ss.href;
+        var i = sheets.length;
+        while (i--) {
+          if (sheets[i].href === resolvedHref) {
+            return cb();
+          }
+        }
+        setTimeout(function () {
+          onloadcssdefined(cb);
+        });
+      };
+      function loadCB() {
+        if (ss.addEventListener) {
+          ss.removeEventListener("load", loadCB);
+        }
+        ss.media = media || "all";
+      }
+      if (ss.addEventListener) {
+        ss.addEventListener("load", loadCB);
+      }
+      ss.onloadcssdefined = onloadcssdefined;
+      onloadcssdefined(loadCB);
+      return ss;
+    },
+
+    js: (src, opt) => new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      if (src.startsWith('/')){
+        src = ctx.root + src.substring(1);
+      }
+      script.src = src;
+      if (opt) {
+        for (let key of Object.keys(opt)) {
+          script[key] = opt[key]
+        }
+      } else {
+        // 默认异步，如果需要同步，第二个参数传入 {} 即可
+        script.async = true
+      }
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    }),
+
+    jq: (fn) => {
+      if (typeof jQuery === 'undefined') {
+        utils.js(deps.jquery).then(fn)
+      } else {
+        fn()
+      }
+    },
+    
+    onLoading: (el) => {
+      if (el) {
+        $(el).append('<div class="loading-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" stroke-opacity=".3" d="M12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="1.3s" values="60;0"/></path><path stroke-dasharray="15" stroke-dashoffset="15" d="M12 3C16.9706 3 21 7.02944 21 12"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.3s" values="15;0"/><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g></svg></div>');
+      }
+    },
+    onLoadSuccess: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap').remove();
+      }
+    },
+    onLoadFailure: (el) => {
+      if (el) {
+        $(el).find('.loading-wrap svg').remove();
+        $(el).find('.loading-wrap').append('<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path stroke-dasharray="60" stroke-dashoffset="60" d="M12 3L21 20H3L12 3Z"><animate fill="freeze" attributeName="stroke-dashoffset" dur="0.5s" values="60;0"/></path><path stroke-dasharray="6" stroke-dashoffset="6" d="M12 10V14"><animate fill="freeze" attributeName="stroke-dashoffset" begin="0.6s" dur="0.2s" values="6;0"/></path></g><circle cx="12" cy="17" r="1" fill="currentColor" fill-opacity="0"><animate fill="freeze" attributeName="fill-opacity" begin="0.8s" dur="0.4s" values="0;1"/></circle></svg>');
+        $(el).find('.loading-wrap').addClass('error');
+      }
+    },
+    request: (el, url, callback, onFailure) => {
+      let retryTimes = 3;
+      utils.onLoading(el);
+      function req() {
+        return new Promise((resolve, reject) => {
+          let status = 0; // 0 等待 1 完成 2 超时
+          let timer = setTimeout(() => {
+            if (status === 0) {
+              status = 2;
+              timer = null;
+              reject('请求超时');
+              if (retryTimes == 0) {
+                onFailure();
+              }
+            }
+          }, 5000);
+          fetch(url).then(function(response) {
+            if (status !== 2) {
+              clearTimeout(timer);
+              resolve(response);
+              timer = null;
+              status = 1;
+            }
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Network response was not ok.');
+          }).then(function(data) {
+            retryTimes = 0;
+            utils.onLoadSuccess(el);
+            callback(data);
+          }).catch(function(error) {
+            if (retryTimes > 0) {
+              retryTimes -= 1;
+              setTimeout(() => {
+                req();
+              }, 5000);
+            } else {
+              utils.onLoadFailure(el);
+              onFailure();
+            }
+          });
+        });
+      }
+      req();
+    },
+  };
+</script>
+
+<script>
+  const sidebar = {
+    leftbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    rightbar: () => {
+      if (l_body) {
+        l_body.toggleAttribute('rightbar');
+        l_body.removeAttribute('leftbar');
+      }
+    },
+    dismiss: () => {
+      if (l_body) {
+        l_body.removeAttribute('leftbar');
+        l_body.removeAttribute('rightbar');
+      }
+    },
+    toggleTOC: () => {
+      document.querySelector('#data-toc').classList.toggle('collapse');
+    }
+  }
+</script>
+<script type="text/javascript">
+  (() => {
+    const tagSwitchers = document.querySelectorAll('.tag-subtree.parent-tag > a > .tag-switcher-wrapper')
+    for (const tagSwitcher of tagSwitchers) {
+      tagSwitcher.addEventListener('click', (e) => {
+        const parent = e.target.closest('.tag-subtree.parent-tag')
+        parent.classList.toggle('expanded')
+        e.preventDefault()
+      })
+    }
+
+    // Get active tag from query string, then activate it.
+    const urlParams = new URLSearchParams(window.location.search)
+    const activeTag = urlParams.get('tag')
+    if (activeTag) {
+      let tag = document.querySelector(`.tag-subtree[data-tag="${activeTag}"]`)
+      if (tag) {
+        tag.querySelector('a').classList.add('active')
+        
+        while (tag) {
+          tag.classList.add('expanded')
+          tag = tag.parentElement.closest('.tag-subtree.parent-tag')
+        }
+      }
+    }
+  })()
+</script>
+
+
+<!-- required -->
+<script src="/js/main.js?v=1.29.1" defer></script>
+
+<script type="text/javascript">
+  const applyTheme = (theme) => {
+    if (theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+
+    applyThemeToGiscus(theme)
+  }
+
+  const applyThemeToGiscus = (theme) => {
+    theme = theme === 'auto' ? 'preferred_color_scheme' : theme
+
+    const cmt = document.getElementById('giscus')
+    if (cmt) {
+      // This works before giscus load.
+      cmt.setAttribute('data-theme', theme)
+    }
+
+    const iframe = document.querySelector('#comments > section.giscus > iframe')
+    if (iframe) {
+      // This works after giscus loaded.
+      const src = iframe.src
+      const newSrc = src.replace(/theme=[\w]+/, `theme=${theme}`)
+      iframe.src = newSrc
+    }
+  }
+
+  const switchTheme = () => {
+    // light -> dark -> auto -> light -> ...
+    const currentTheme = document.documentElement.getAttribute('data-theme')
+    let newTheme;
+    switch (currentTheme) {
+      case 'light':
+        newTheme = 'dark'
+        break
+      case 'dark':
+        newTheme = 'auto'
+        break
+      default:
+        newTheme = 'light'
+    }
+    applyTheme(newTheme)
+    window.localStorage.setItem('Stellar.theme', newTheme)
+
+    const messages = {
+      light: `Switched to Light Mode`,
+      dark: `Switched to Dark Mode`,
+      auto: `Switched to Auto Mode`,
+    }
+    hud?.toast?.(messages[newTheme])
+  }
+
+  (() => {
+    // Apply user's preferred theme, if any.
+    const theme = window.localStorage.getItem('Stellar.theme')
+    if (theme !== null) {
+      applyTheme(theme)
+    }
+  })()
+</script>
+
+
+<!-- optional -->
+
+
+
+<script defer>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.services = Object.assign({}, JSON.parse(`{"mdrender":{"js":"/js/services/mdrender.js"},"siteinfo":{"js":"/js/services/siteinfo.js","api":null},"ghinfo":{"js":"/js/services/ghinfo.js"},"sites":{"js":"/js/services/sites.js"},"friends":{"js":"/js/services/friends.js"},"timeline":{"js":"/js/services/timeline.js"},"fcircle":{"js":"/js/services/fcircle.js"},"weibo":{"js":"/js/services/weibo.js"},"memos":{"js":"/js/services/memos.js"}}`));
+    for (let id of Object.keys(ctx.services)) {
+      const js = ctx.services[id].js;
+      if (id == 'siteinfo') {
+        ctx.cardlinks = document.querySelectorAll('a.link-card[cardlink]');
+        if (ctx.cardlinks?.length > 0) {
+          utils.js(js, { defer: true }).then(function () {
+            setCardLink(ctx.cardlinks);
+          });
+        }
+      } else {
+        const els = document.getElementsByClassName(`ds-${id}`);
+        if (els?.length > 0) {
+          utils.jq(() => {
+            if (id == 'timeline' || 'memos' || 'marked') {
+              utils.js(deps.marked).then(function () {
+                utils.js(js, { defer: true });
+              });
+            } else {
+              utils.js(js, { defer: true });
+            }
+          });
+        }
+      }
+    }
+  });
+</script>
+
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    ctx.search = {
+      path: `/search.json`,
+    }
+    utils.js('/js/search/local-search.js', { defer: true });
+  });
+</script><script>
+  window.FPConfig = {
+    delay: 0,
+    ignoreKeywords: [],
+    maxRPS: 5,
+    hoverDelay: 25
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.min.js"></script>
+<script>
+  // https://www.npmjs.com/package/vanilla-lazyload
+  // Set the options globally
+  // to make LazyLoad self-initialize
+  window.lazyLoadOptions = {
+    elements_selector: ".lazy",
+  };
+  // Listen to the initialization event
+  // and get the instance of LazyLoad
+  window.addEventListener(
+    "LazyLoad::Initialized",
+    function (event) {
+      window.lazyLoadInstance = event.detail.instance;
+    },
+    false
+  );
+  document.addEventListener('DOMContentLoaded', function () {
+    window.lazyLoadInstance?.update();
+  });
+</script><script>
+  ctx.fancybox = {
+    selector: `.timenode p>img`,
+    css: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css`,
+    js: `https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js`
+  };
+  var selector = '[data-fancybox]:not(.error)';
+  if (ctx.fancybox.selector) {
+    selector += `, ${ctx.fancybox.selector}`
+  }
+  var needFancybox = document.querySelectorAll(selector).length !== 0;
+  if (!needFancybox) {
+    const els = document.getElementsByClassName('ds-memos');
+    if (els != undefined && els.length > 0) {
+      needFancybox = true;
+    }
+  }
+  if (needFancybox) {
+    utils.css(ctx.fancybox.css);
+    utils.js(ctx.fancybox.js, { defer: true }).then(function () {
+      Fancybox.bind(selector, {
+        hideScrollbar: false,
+        Thumbs: {
+          autoStart: false,
+        },
+        caption: (fancybox, slide) => {
+          return slide.triggerEl.alt || slide.triggerEl.dataset.caption || null
+        }
+      });
+    })
+  }
+</script>
+<script>
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const swiper_api = document.getElementById('swiper-api');
+    if (swiper_api != undefined) {
+      utils.css(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.css`);
+      utils.js(`https://unpkg.com/swiper@10.3.1/swiper-bundle.min.js`, { defer: true }).then(function () {
+        const effect = swiper_api.getAttribute('effect') || '';
+        var swiper = new Swiper('.swiper#swiper-api', {
+          slidesPerView: 'auto',
+          spaceBetween: 8,
+          centeredSlides: true,
+          effect: effect,
+          rewind: true,
+          pagination: {
+            el: '.swiper-pagination',
+            clickable: true,
+          },
+          navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          },
+        });
+      })
+    }
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    window.codeElements = document.querySelectorAll('.code');
+    if (window.codeElements.length > 0) {
+      ctx.copycode = {
+        default_text: `Copy`,
+        success_text: `Copied`,
+        toast: `复制成功`,
+      };
+      utils.js('/js/plugins/copycode.js');
+    }
+  });
+</script>
+
+
+<!-- inject -->
+
+</div></body></html>
